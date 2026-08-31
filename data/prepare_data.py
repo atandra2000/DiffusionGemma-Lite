@@ -1,0 +1,113 @@
+"""Project-specific wrapper around the workspace-wide tokenization pipeline.
+
+It supplies the GPT-2 tokenizer contract required by DiffusionGemma-Lite, writes a
+local configuration override, and forwards download, tokenize, and packing
+options to the shared pipeline. The `shared_data` package must be vendored or
+available from the parent workspace.
+"""
+import argparse
+import sys
+from pathlib import Path
+
+import yaml
+
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+_LLM_ROOT = _PROJECT_ROOT.parent  # .../CoreProjects/LLM/ (workspace shared_data lives here)
+
+
+def _require_shared_data() -> None:
+    """Raise a clean, actionable error if the vendored pipeline is missing."""
+    vendored = _PROJECT_ROOT / "data" / "shared_data"
+    workspace = _LLM_ROOT / "shared_data" if _LLM_ROOT.exists() else None
+    if vendored.exists() or (workspace is not None and workspace.exists()):
+        return
+    raise FileNotFoundError(
+        "DiffusionGemma-Lite data prep requires the `shared_data` package. "
+        f"Neither {vendored} nor {workspace} was found on this clone. "
+        "Vendor `shared_data/` from a sibling CoreProjects repo, or use a "
+        "pre-tokenized uint32 shard with `data/dataset.py:ShardWindows`."
+    )
+
+
+for _p in (_PROJECT_ROOT, _LLM_ROOT):
+    _p = str(_p)
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+
+DIFFUSIONGEMMA_TOKENIZER_NAME = "gpt2"
+DIFFUSIONGEMMA_VOCAB_SIZE = 50_257
+DIFFUSIONGEMMA_EOS_TOKEN_ID = 50_256
+DIFFUSIONGEMMA_PAD_TOKEN_ID = 50_256
+
+
+def _ensure_diffusiongemma_data_config(project_root: Path) -> Path:
+    """Materialise a project-local data_config.yaml with DiffusionGemma-Lite's vocab."""
+    from shared_data.config import UNIVERSAL_DATA_CONFIG_PATH
+    from shared_data.common import load_yaml
+
+    out_path = project_root / "data" / "data_config.yaml"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    cfg = load_yaml(UNIVERSAL_DATA_CONFIG_PATH)
+    cfg["pipeline"]["tokenizer"]["name"] = DIFFUSIONGEMMA_TOKENIZER_NAME
+    cfg["pipeline"]["tokenizer"]["vocab_size"] = DIFFUSIONGEMMA_VOCAB_SIZE
+    cfg["pipeline"]["tokenizer"]["eos_token_id"] = DIFFUSIONGEMMA_EOS_TOKEN_ID
+    cfg["pipeline"]["tokenizer"]["pad_token_id"] = DIFFUSIONGEMMA_PAD_TOKEN_ID
+    cfg["_generator"] = "DiffusionGemma-Lite/data/prepare_data.py"
+    cfg["_tokenizer_family"] = "gpt2"
+
+    text = yaml.safe_dump(cfg, sort_keys=False, allow_unicode=True)
+    out_path.write_text(text, encoding="utf-8")
+    return out_path
+
+
+def _apply_diffusiongemma_defaults() -> Path:
+    """Create the local pipeline config with the model's tokenizer settings."""
+    from shared_data.config import UNIVERSAL_TOTAL_TOKENS
+
+    print(f"[data/diffusiongemma] universal corpus: {UNIVERSAL_TOTAL_TOKENS:,} tokens")
+    print(f"[data/diffusiongemma] tokenizer: {DIFFUSIONGEMMA_TOKENIZER_NAME} "
+          f"(vocab={DIFFUSIONGEMMA_VOCAB_SIZE:,}, EOS={DIFFUSIONGEMMA_EOS_TOKEN_ID})")
+    print(f"[data/diffusiongemma] shard size: 50,000,000 tokens (uint32)")
+    return _ensure_diffusiongemma_data_config(Path(__file__).resolve().parents[1])
+
+
+def main() -> int:
+    """Parse CLI overrides and run the shared data preparation pipeline."""
+    _require_shared_data()
+
+    parser = argparse.ArgumentParser(
+        description="DiffusionGemma-Lite data prep (delegates to universal pipeline)"
+    )
+    parser.add_argument("--mixture", default=None)
+    parser.add_argument("--data-config", default=None)
+    parser.add_argument("--data-root", default=None,
+                        help="Output root for shards (default: workspace DATA_ROOT)")
+    parser.add_argument("--source", default=None)
+    parser.add_argument("--skip-download", action="store_true")
+    parser.add_argument("--skip-clean", action="store_true")
+    parser.add_argument("--skip-tokenize", action="store_true")
+    parser.add_argument("--skip-pack", action="store_true")
+    args = parser.parse_args()
+
+    project_data_config = _apply_diffusiongemma_defaults()
+
+    from shared_data.config import UNIVERSAL_MIXTURE_PATH
+    from shared_data.prepare_data import run_pipeline
+
+    return run_pipeline(
+        mixture_path=Path(args.mixture) if args.mixture else UNIVERSAL_MIXTURE_PATH,
+        data_config_path=Path(args.data_config) if args.data_config else project_data_config,
+        source=args.source,
+        skip_download=args.skip_download,
+        skip_clean=args.skip_clean,
+        skip_tokenize=args.skip_tokenize,
+        skip_pack=args.skip_pack,
+        data_root=Path(args.data_root) if args.data_root else None,
+    )
+
+
+if __name__ == "__main__":
+    sys.exit(main())
