@@ -111,14 +111,17 @@ class BlockDiffusionSampler:
         g = self._generator(device)
         x = torch.randint(0, V, (kv[0][0].size(0), L), device=device, generator=g)
         committed = torch.zeros(kv[0][0].size(0), L, dtype=torch.bool, device=device)
-        prev, sc, entropies, x0 = None, None, [], x
+        prev, sc, entropies, x0, streak = None, None, [], x, 0
         for k in range(T_eval):
             tau = cfg.temp_start - (cfg.temp_start - cfg.temp_end) / T_eval * k
             x, committed, prev, ent, sc, x0 = self._denoise_step(
                 kv, prefix_len, x, committed, prev, T_eval - k, tau, sc, g)
             entropies.append(ent)
-            # Task 10 lands the adaptive entropy-bound break here.
-        return torch.where(committed, x, x0), T_eval, entropies
+            if cfg.adaptive:
+                streak = streak + 1 if float(ent) < cfg.entropy_threshold else 0
+                if streak >= cfg.stability_steps:
+                    break                    # entropy bond: stable low-entropy posterior
+        return torch.where(committed, x, x0), len(entropies), entropies
 
     @torch.no_grad()
     def encode_canvas(self, kv, prefix_len, canvas_ids):
