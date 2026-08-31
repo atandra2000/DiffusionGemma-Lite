@@ -11,7 +11,7 @@ def test_zero_init_equivalence(device):
     h = h + 0.1  # ensure nonzero
     sc = torch.randn(B, T, D, dtype=torch.float64, device=device)
     E = torch.randn(V, D, dtype=torch.float64, device=device)
-    assert torch.allclose(m(h, sc, E), h, atol=0)
+    assert torch.allclose(m(h, sc, E), h, rtol=0.0, atol=0)
 
     # The conditioning path must be live: a non-zero-init proj changes the output.
     with torch.no_grad():

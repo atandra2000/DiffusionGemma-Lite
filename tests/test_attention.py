@@ -2,7 +2,7 @@ import math
 
 import torch
 
-from models.attention import DenoiseAttention
+from models.attention import DenoiseAttention, apply_rope
 from models.mask import build_block_causal_mask
 
 
@@ -11,8 +11,8 @@ def _rope_ref(x, positions, theta):
     half = x.size(-1) // 2
     inv = theta ** (-2.0 * torch.arange(half, dtype=x.dtype) / x.size(-1))
     ang = positions.to(x.dtype)[:, None] * inv
-    cos = ang.cos()[None, None].repeat_interleave(2, dim=-1)
-    sin = ang.sin()[None, None].repeat_interleave(2, dim=-1)
+    cos = ang.cos()[None, None].repeat(1, 1, 1, 2)
+    sin = ang.sin()[None, None].repeat(1, 1, 1, 2)
     x1, x2 = x[..., :half], x[..., half:]
     return x * cos + torch.cat([-x2, x1], dim=-1) * sin
 
@@ -49,7 +49,9 @@ def test_rope_positions_change_output(device):
     hidden = torch.randn(B, T, D, device=device)
     mask = build_block_causal_mask(T, 4, device)
     out_a = m(hidden, mask, torch.arange(T, device=device))
-    out_b = m(hidden, mask, torch.arange(T, device=device) + 100)
+    # Standard rope cancels a UNIFORM shift (relative positions unchanged), so the
+    # comparison must change relative spacing, not just add a constant.
+    out_b = m(hidden, mask, torch.arange(0, 2 * T, 2, device=device))
     assert not torch.allclose(out_a, out_b, atol=1e-4)
 
 
@@ -100,3 +102,23 @@ def test_past_kv_prefix_path(device):
 
     assert out_inc.shape == (B, L, D)
     assert torch.allclose(out_inc, out_full, atol=1e-5)
+
+
+def test_rope_preserves_norms_and_relative_position(device):
+    torch.manual_seed(4)
+    B, H, T, D = 1, 2, 6, 8
+    q = torch.randn(B, H, T, D, dtype=torch.float64, device=device)
+    k = torch.randn(B, H, T, D, dtype=torch.float64, device=device)
+    pos = torch.arange(T, device=device)
+
+    qr, kr = apply_rope(q, k, pos, 10000.0)
+    assert torch.allclose(qr.norm(dim=-1), q.norm(dim=-1), rtol=1e-12, atol=1e-12)
+    assert torch.allclose(kr.norm(dim=-1), k.norm(dim=-1), rtol=1e-12, atol=1e-12)
+
+    # <R_m q, R_n k> == <R_0 q, R_{n-m} k>: rope must depend only on n-m.
+    theta = 10000.0
+    for m, n in [(0, 0), (3, 5), (1, 4), (2, 6)]:
+        qm = apply_rope(q, q, torch.full((T,), m, dtype=torch.long, device=device), theta)[0]
+        kn = apply_rope(k, k, torch.full((T,), n, dtype=torch.long, device=device), theta)[0]
+        krel = apply_rope(k, k, torch.full((T,), n - m, dtype=torch.long, device=device), theta)[0]
+        assert torch.allclose((qm * kn).sum(-1), (q * krel).sum(-1), rtol=1e-9, atol=1e-9)
