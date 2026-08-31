@@ -1,0 +1,69 @@
+# configs/pretrain_a100_380m.yaml
+# DiffusionGemma-Lite ~380M param Chinchilla-optimal pre-training.
+# Designed for 1x A100 80GB SXM. Target: ~14-18 h at 35-40% MFU.
+#
+# Architecture: d_model=1024, 24 dense layers, block-causal attention
+#               (GQA 16Q/4KV, head_dim=64), uniform-state block diffusion:
+#               canvas=256, train T=16, eval T<=32, adaptive entropy stop.
+#
+# Stability features:
+#   - 2000-step linear warmup + cosine decay to 5%
+#   - gradient clipping at 1.0
+#   - NaN guard with checkpoint rollback
+#   - weight tying (embed <-> head)
+#   - self-conditioning (p=0.5 train-time, zero-init-equivalence-tested)
+#   - fixed-schedule sampler fallback (adaptive_off ablation)
+
+model:
+  vocab_size:              50257         # GPT-2 BPE (shared_data default, Mamba-3-Lite parity)
+  d_model:                 1024
+  n_layers:                24
+  n_heads:                 16            # query heads
+  n_kv_heads:              4             # GQA key-value groups
+  head_dim:                64            # d_model / n_heads
+  ffn_dim:                 3072          # SwiGLU intermediate (3× d_model)
+  weight_tying:            true
+  rms_norm_eps:            1.0e-5
+  init_std:                0.02
+  rope_theta:              500000
+  max_seq_len:             4096          # = 16 canvases
+  attn_impl:               "sdpa"        # block-causal mask path
+  # --- the diffusion core (the distinctive component) ---
+  canvas_len:              256
+  n_diffusion_steps:       16            # train-time T (per-canvas t ~ U{1..T})
+  eval_diffusion_steps:   32             # eval-time max T (upstream uses 48)
+  corruption:              "uniform"     # Uniform State Diffusion
+  alpha_schedule:          "cosine"      # ᾱ_t = cos²(π/2 · t/T)
+  self_conditioning:       true
+  self_cond_p:             0.5           # fraction of corrupted steps with sc
+  self_cond_detach:        true          # first pass under no_grad
+  time_embed_dim:          256
+
+training:
+  micro_batch_size:              8
+  gradient_accumulation_steps:   4
+  total_steps:                   61000           # ~8.0B tokens / (8·4·4096)
+  warmup_steps:                  2000
+  lr:                            3.0e-4
+  min_lr_ratio:                  0.05
+  weight_decay:                  0.1
+  beta1:                         0.9
+  beta2:                         0.95
+  grad_clip:                     1.0
+  grad_checkpoint:               true
+  grad_checkpoint_every:         3
+  compile:                       true
+  compile_mode:                  "max-autotune"
+  save_interval:                 4000
+  log_interval:                  50
+  nan_guard:                     true
+  nan_guard_max_consecutive:     5
+  save_dir:                      "checkpoints/pretrain_a100"
+
+data:
+  train_data_path:      "data/pretrain_chinchilla"
+  tokenizer:            "gpt2"                   # 50,257 vocab (Mamba-3-Lite parity)
+  shard_size_tokens:    50000000
+  max_tokens:           8000000000
+  data_mix:             "diffusiongemma-default"
+  # same shared_data mixture as other Lites; cross_document_boundary_ok: false
