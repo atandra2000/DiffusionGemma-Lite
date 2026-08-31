@@ -6,12 +6,15 @@ from models.mask import block_causal_sdpa_attention
 
 
 def apply_rope(q, k, positions, theta):
-    """Rotate-half RoPE at absolute positions; q and k share the incoming token axis."""
+    """Rotate-half RoPE at absolute positions; theta is the base (float) or a precomputed inv_freq buffer."""
     half = q.size(-1) // 2
-    inv_freq = theta ** (-2.0 * torch.arange(half, dtype=q.dtype, device=q.device) / q.size(-1))
-    angle = positions.to(q.dtype)[:, None] * inv_freq            # (T, half)
-    cos = angle.cos()[None, None].repeat_interleave(2, dim=-1)  # (1, 1, T, head_dim)
-    sin = angle.sin()[None, None].repeat_interleave(2, dim=-1)
+    if isinstance(theta, torch.Tensor):
+        inv_freq = theta.to(dtype=q.dtype, device=q.device)
+    else:
+        inv_freq = theta ** (-2.0 * torch.arange(half, dtype=q.dtype, device=q.device) / q.size(-1))
+    angle = positions.to(q.dtype)[:, None] * inv_freq           # (T, half)
+    cos = angle.cos()[None, None].repeat(1, 1, 1, 2)            # cat([f, f]): pairs (i, i+half)
+    sin = angle.sin()[None, None].repeat(1, 1, 1, 2)
 
     def rotate(x):
         x1, x2 = x[..., :half], x[..., half:]
@@ -36,6 +39,9 @@ class DenoiseAttention(nn.Module):
         self.k_proj = nn.Linear(d_model, n_kv_heads * head_dim)
         self.v_proj = nn.Linear(d_model, n_kv_heads * head_dim)
         self.out_proj = nn.Linear(n_heads * head_dim, d_model)
+        half = head_dim // 2
+        inv_freq = rope_theta ** (-2.0 * torch.arange(half).float() / head_dim)
+        self.register_buffer("inv_freq", inv_freq)
 
     def forward(self, hidden, mask, positions, past_kv=None):
         """hidden: (B, T, D) -> (B, T, D); mask: (1, 1, T, T_total) bool."""
@@ -43,7 +49,7 @@ class DenoiseAttention(nn.Module):
         q = self.q_proj(hidden).view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
         k = self.k_proj(hidden).view(B, T, self.n_kv_heads, self.head_dim).transpose(1, 2)
         v = self.v_proj(hidden).view(B, T, self.n_kv_heads, self.head_dim).transpose(1, 2)
-        q, k = apply_rope(q, k, positions, self.rope_theta)
+        q, k = apply_rope(q, k, positions, self.inv_freq)
         if past_kv is not None:
             k = torch.cat([past_kv[0], k], dim=2)
             v = torch.cat([past_kv[1], v], dim=2)
