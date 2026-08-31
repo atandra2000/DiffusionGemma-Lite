@@ -57,3 +57,46 @@ def test_block_ar_chaining_matches_single_shot(tiny_model, device):
     tt = torch.tensor([[0, 0, 4]])
     logits_full = model.head_forward(model.backbone(full, tt, time_steps=4))
     assert torch.allclose(logits_chain, logits_full[:, prefix2:], atol=1e-5)
+
+def test_adaptive_stopping_fires(tiny_model, device):
+    """A converged canvas (near-one-hot logits injected) stops in < the full schedule."""
+    V, L = tiny_model.cfg.vocab_size, tiny_model.cfg.canvas_len
+
+    def converged_head(h_norm, sc_input=None):
+        logits = torch.full((h_norm.size(0), L, V), -50.0, device=device, dtype=h_norm.dtype)
+        pos = torch.arange(L, device=device)
+        logits[..., pos, pos % V] = 50.0          # paired indexing: per-position one-hot
+        return logits
+
+    tiny_model.head_forward = converged_head
+    s = BlockDiffusionSampler(tiny_model, SamplerConfig(
+        n_diffusion_steps=8, adaptive=True, entropy_threshold=1.0, stability_steps=2, seed=3))
+    kv, prefix_len = s.prefill(torch.randint(0, V, (1, 16), device=device))
+    canvas, steps_used, entropies = s.denoise_canvas(kv, prefix_len)
+    assert steps_used < 8
+    assert steps_used == 2                   # one step under threshold + stability step
+    assert len(entropies) == steps_used
+    assert canvas.shape == (1, L)
+
+
+def test_adaptive_threshold_calibratable(tiny_model, device):
+    """Untrained model runs the full schedule at a low threshold; a huge one stops early."""
+    V = tiny_model.cfg.vocab_size
+    kv, prefix_len = None, None
+    for threshold, expected in [(0.1, 8), (1_000_000.0, 2)]:
+        s = BlockDiffusionSampler(tiny_model, SamplerConfig(
+            n_diffusion_steps=8, adaptive=True, entropy_threshold=threshold,
+            stability_steps=2, seed=4))
+        kv, prefix_len = s.prefill(torch.randint(0, V, (1, 16), device=device))
+        _, steps_used, _ = s.denoise_canvas(kv, prefix_len)
+        assert steps_used == expected
+
+
+def test_adaptive_off_ignores_entropy(tiny_model, device):
+    """adaptive=False must run the plain full schedule even with a huge threshold."""
+    V = tiny_model.cfg.vocab_size
+    s = BlockDiffusionSampler(tiny_model, SamplerConfig(
+        n_diffusion_steps=8, adaptive=False, entropy_threshold=1_000_000.0, seed=5))
+    kv, prefix_len = s.prefill(torch.randint(0, V, (1, 16), device=device))
+    _, steps_used, _ = s.denoise_canvas(kv, prefix_len)
+    assert steps_used == 8
