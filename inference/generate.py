@@ -1,6 +1,7 @@
 """Block-AR canvas sampler: uniform-state denoising over KV-chained finalized canvases."""
 import math
 from dataclasses import dataclass
+from typing import Optional
 
 import torch
 
@@ -17,7 +18,7 @@ class SamplerConfig:
     stability_steps: int = 2
     temp_start: float = 0.8
     temp_end: float = 0.4
-    seed: int = None
+    seed: Optional[int] = None
 
 
 def _prefix_mask(prompt_len: int, canvas_len: int, device=None) -> torch.Tensor:
@@ -63,7 +64,7 @@ class BlockDiffusionSampler:
         h, kv = self.model.backbone(prompt_ids, t, mask=_prefix_mask(P, self.model.cfg.canvas_len,
                                                                     prompt_ids.device),
                                     positions=self._positions(0, P, prompt_ids.device),
-                                    return_kv=True)
+                                    time_steps=self.cfg.n_diffusion_steps, return_kv=True)
         return kv, P
 
     @torch.no_grad()
