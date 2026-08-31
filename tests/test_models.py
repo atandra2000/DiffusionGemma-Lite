@@ -70,3 +70,9 @@ def test_eager_attn_impl_matches_sdpa(tiny_cfg, device):
     with torch.no_grad():
         max_diff = (sdpa(x, t) - eager(x, t)).abs().max().item()
     assert max_diff < 1e-5, f"eager diverges from sdpa: max |diff| = {max_diff:.3e}"
+
+
+def test_yaml_config_roundtrip():
+    cfg = DiffusionGemmaConfig.from_yaml("configs/pretrain_a100_380m.yaml")
+    assert cfg.d_model == 1024 and cfg.canvas_len == 256
+    assert cfg.n_diffusion_steps == 16 and cfg.eval_diffusion_steps == 32
