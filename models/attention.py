@@ -43,8 +43,11 @@ class DenoiseAttention(nn.Module):
         inv_freq = rope_theta ** (-2.0 * torch.arange(half).float() / head_dim)
         self.register_buffer("inv_freq", inv_freq)
 
-    def forward(self, hidden, mask, positions, past_kv=None):
-        """hidden: (B, T, D) -> (B, T, D); mask: (1, 1, T, T_total) bool."""
+    def _roped_qkv(self, hidden, positions, past_kv=None):
+        """Projections + rope at absolute positions; past_kv (roped k, v) appended.
+
+        Returns q (n_heads) and k/v (n_kv_heads, untiled), plus the cacheable (k, v)
+        covering past + current tokens."""
         B, T, _ = hidden.shape
         q = self.q_proj(hidden).view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
         k = self.k_proj(hidden).view(B, T, self.n_kv_heads, self.head_dim).transpose(1, 2)
@@ -53,9 +56,18 @@ class DenoiseAttention(nn.Module):
         if past_kv is not None:
             k = torch.cat([past_kv[0], k], dim=2)
             v = torch.cat([past_kv[1], v], dim=2)
+        return q, k, v, (k, v)
+
+    def forward(self, hidden, mask, positions, past_kv=None, return_kv=False):
+        """hidden: (B, T, D) -> (B, T, D); mask: (1, 1, T, T_total) bool.
+
+        Output covers only the incoming tokens; with return_kv=True also the
+        new per-layer (k, v) for the cache."""
+        B, T, _ = hidden.shape
+        q, k, v, kv = self._roped_qkv(hidden, positions, past_kv)
         reps = self.n_heads // self.n_kv_heads
         k = k.repeat_interleave(reps, dim=1)
         v = v.repeat_interleave(reps, dim=1)
         out = block_causal_sdpa_attention(q, k, v, mask)
-        out = out.transpose(1, 2).reshape(B, T, self.n_heads * self.head_dim)
-        return self.out_proj(out)
+        out = self.out_proj(out.transpose(1, 2).reshape(B, T, self.n_heads * self.head_dim))
+        return (out, kv) if return_kv else out
