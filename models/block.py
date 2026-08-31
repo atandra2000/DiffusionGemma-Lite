@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.attention import DenoiseAttention, apply_rope
-from models.mask import eager_block_causal_attention
+from models.attention import DenoiseAttention
+from models.mask import block_causal_sdpa_attention, eager_block_causal_attention
 
 
 class RMSNorm(nn.Module):
@@ -34,23 +34,23 @@ class DenoiseBlock(nn.Module):
         self.w3 = nn.Linear(d_model, ffn_dim)
         self.attn_impl = attn_impl
 
-    def _attention(self, h, mask, positions):
-        """sdpa: DenoiseAttention; eager: same projections, eager path, mask stays bool."""
-        if self.attn_impl == "sdpa":
-            return self.attn(h, mask, positions)
+    def _attention(self, h, mask, positions, past_kv=None):
+        """Shared projections/rope/past-append via DenoiseAttention; only the masked
+        kernel differs between attn_impl paths (sdpa vs eager ground truth)."""
         a = self.attn
         B, T, _ = h.shape
-        q = a.q_proj(h).view(B, T, a.n_heads, a.head_dim).transpose(1, 2)
-        k = a.k_proj(h).view(B, T, a.n_kv_heads, a.head_dim).transpose(1, 2)
-        v = a.v_proj(h).view(B, T, a.n_kv_heads, a.head_dim).transpose(1, 2)
-        q, k = apply_rope(q, k, positions, a.inv_freq)
+        q, k, v, kv = a._roped_qkv(h, positions, past_kv)
         reps = a.n_heads // a.n_kv_heads
         k = k.repeat_interleave(reps, dim=1)
         v = v.repeat_interleave(reps, dim=1)
-        out = eager_block_causal_attention(q, k, v, mask)
-        return a.out_proj(out.transpose(1, 2).reshape(B, T, a.n_heads * a.head_dim))
+        kernel = block_causal_sdpa_attention if self.attn_impl == "sdpa" else eager_block_causal_attention
+        out = kernel(q, k, v, mask)
+        out = a.out_proj(out.transpose(1, 2).reshape(B, T, a.n_heads * a.head_dim))
+        return out, kv
 
-    def forward(self, hidden, mask, positions):
-        h = hidden + self._attention(self.attn_norm(hidden), mask, positions)
+    def forward(self, hidden, mask, positions, past_kv=None, return_kv=False):
+        att, kv = self._attention(self.attn_norm(hidden), mask, positions, past_kv)
+        h = hidden + att
         f = F.silu(self.w1(self.ffn_norm(h))) * self.w3(self.ffn_norm(h))
-        return h + self.w2(f)
+        h = h + self.w2(f)
+        return (h, kv) if return_kv else h
