@@ -1,0 +1,6 @@
+torch>=2.4
+numpy
+pyyaml
+safetensors
+pytest
+# wandb  # optional; enable for full training runs
