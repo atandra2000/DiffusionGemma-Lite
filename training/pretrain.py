@@ -45,7 +45,7 @@ class TrainingConfig:
     """Runtime settings shared by the CLI and programmatic training entry points."""
 
     model_config: DiffusionGemmaConfig
-    data_path: str = "data/pretrain_chinchilla"
+    data_path: str = "data/pretrain_chinchilla/shards"
     checkpoint_dir: str = "checkpoints/pretrain_a100"
     micro_batch_size: int = 8
     gradient_accumulation_steps: int = 4
@@ -288,14 +288,14 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Run 2 steps to verify wiring")
     args = parser.parse_args()
 
-    with open(args.config) as f:
+    with open(args.config, encoding="utf-8") as f:
         import yaml
         yaml_cfg = yaml.safe_load(f)
     yam, data_cfg = yaml_cfg.get("training", {}), yaml_cfg.get("data", {})
 
     config = TrainingConfig(
         model_config=DiffusionGemmaConfig.from_yaml(args.config),
-        data_path=args.data_path or data_cfg.get("train_data_path", "data/pretrain_chinchilla"),
+        data_path=args.data_path or data_cfg.get("train_data_path", "data/pretrain_chinchilla/shards"),
         checkpoint_dir=args.checkpoint_dir or yam.get("save_dir", "checkpoints/pretrain_a100"),
         micro_batch_size=yam.get("micro_batch_size", 8),
         gradient_accumulation_steps=yam.get("gradient_accumulation_steps", 4),
