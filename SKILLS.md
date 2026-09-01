@@ -92,6 +92,12 @@ coverage gate fails.
 
 ## Pitfalls
 
+- **Local Python version:** the code uses PEP-604 annotations (`int | None`);
+  the macOS default `python3` (3.9) fails collection with
+  `TypeError: unsupported operand type(s) for |`. CI pins 3.11; locally run
+  the suite under 3.11+ (e.g. `uv run --python 3.13 --with torch --with numpy
+  --with pyyaml --with safetensors --with pytest python -m pytest -m "not gpu
+  and not slow"`).
 - **`xt` vs x0:** the plan's Task-13 loss line says `xt`; the correct target
   is x0 (sampler semantics depend on it). Don't "fix" the code to match the
   plan text.

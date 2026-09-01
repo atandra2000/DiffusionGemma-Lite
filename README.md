@@ -127,7 +127,7 @@ print(m.generate(torch.randint(0, 50257, (1, 64)), max_new_tokens=1024).shape)
 ```
 
 ```bash
-python3 -m pytest -m "not gpu and not slow"   # CPU-friendly suite (63 tests)
+python3 -m pytest -m "not gpu and not slow"   # CPU-friendly suite (69 tests)
 python scripts/check_docs.py --coverage        # doc↔code anchor gate
 ```
 
@@ -151,7 +151,7 @@ python scripts/check_docs.py --coverage        # doc↔code anchor gate
 
 | item | status |
 |---|---|
-| Diffusion core, sampler, training loop, eval harness | ✅ implemented, 63 CPU tests green |
+| Diffusion core, sampler, training loop, eval harness | ✅ implemented, 69 CPU tests green |
 | Chunked-CE ≡ eager CE at production vocab | ✅ measured: max abs diff **0.0**, grads ≤ 1.7e-7 |
 | 100-step smoke descent + resume bit-equality | ✅ measured on CPU |
 | **8.0B-token A100 training run** | ❌ not started (Task 15 scripts ready for the pod) |

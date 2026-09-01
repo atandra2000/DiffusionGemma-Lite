@@ -7,7 +7,7 @@ repo root (`LLM/DiffusionGemma-Lite/`) and Python ≥ 3.10 with
 ## 0. Environment check
 
 ```bash
-python3 -m pytest -m "not gpu and not slow"    # 63+ tests, CPU-only
+python3 -m pytest -m "not gpu and not slow"    # 69 tests, CPU-only
 ```
 
 Training needs CUDA (A100 80GB for the production config); everything else
