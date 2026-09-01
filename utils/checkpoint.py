@@ -69,7 +69,7 @@ class CheckpointManager:
             else:
                 logger.warning("[checkpoint] no optimiser state at %s — optimizer will start from scratch", optim_path)
         meta_path = self.save_dir / f"meta_step_{step}.json"
-        meta: dict = json.load(open(meta_path)) if meta_path.exists() else {"step": step}
+        meta: dict = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {"step": step}
         logger.info("[checkpoint] loaded step %d from %s", step, self.save_dir)
         return meta
 
@@ -81,7 +81,7 @@ class CheckpointManager:
     @staticmethod
     def _write_json(path: str, obj: dict) -> None:
         """Serialize metadata with stable indentation for inspectable checkpoints."""
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(obj, f, indent=2, default=str)
 
     def _list_steps(self) -> list:
