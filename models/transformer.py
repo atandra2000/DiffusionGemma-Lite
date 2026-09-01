@@ -53,6 +53,7 @@ class DiffusionGemma(nn.Module):
         super().__init__()
         assert cfg.attn_impl in ("sdpa", "eager"), f"unknown attn_impl: {cfg.attn_impl!r}"
         self.cfg = cfg
+        self.grad_ckpt_every = None  # runtime knob: training loop sets from config §3 training:
         self.embed = nn.Embedding(cfg.vocab_size, cfg.d_model)
         self.blocks = nn.ModuleList([
             DenoiseBlock(cfg.d_model, cfg.n_heads, cfg.n_kv_heads, cfg.head_dim,
@@ -100,8 +101,13 @@ class DiffusionGemma(nn.Module):
                                   time_steps or self.cfg.n_diffusion_steps)
         kvs = []
         for i, block in enumerate(self.blocks):
-            h, kv = block(h, mask, positions,
-                          past_kv=None if past_kv is None else past_kv[i], return_kv=True)
+            if self.grad_ckpt_every and i % self.grad_ckpt_every == 0 \
+                    and self.training and torch.is_grad_enabled() and past_kv is None:
+                h, kv = torch.utils.checkpoint.checkpoint(
+                    block, h, mask, positions, return_kv=True, use_reentrant=False)
+            else:
+                h, kv = block(h, mask, positions,
+                              past_kv=None if past_kv is None else past_kv[i], return_kv=True)
             kvs.append(kv)
         h = self.final_norm(h)
         return (h, kvs) if return_kv else h

@@ -47,11 +47,15 @@ class ShuffledRangeSampler(Sampler):
     """Deterministic, resumable window shuffler (house ``shared_data.loader`` contract).
 
     The permutation is fixed by (seed, n_windows); ``offset`` restarts mid-order
-    after a checkpoint resume without regenerating any draws.
+    after a checkpoint resume without regenerating any draws. Offsets wrap
+    modulo n_windows, so long runs cycle the permutation deterministically.
     """
 
     def __init__(self, n_windows: int, seed: int = 42, offset: int = 0):
-        self.offset = int(offset)
+        if n_windows <= 0:
+            raise ValueError(f"no complete windows available (n_windows={n_windows})")
+        self.n_windows = int(n_windows)
+        self.offset = int(offset) % self.n_windows
         self.indices = np.random.default_rng(seed).permutation(n_windows)
 
     def __iter__(self):
@@ -59,7 +63,7 @@ class ShuffledRangeSampler(Sampler):
             yield int(self.indices[i])
 
     def __len__(self):
-        return max(0, len(self.indices) - self.offset)
+        return len(self.indices) - self.offset
 
 
 def build_dataloader(data_dir, seq_len, batch_size, seed=42, offset_batches=0):
