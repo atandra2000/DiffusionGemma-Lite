@@ -81,6 +81,21 @@ def test_loader_resumable_offset(tmp_data_dir):
     assert torch.equal(batch5, expected)
 
 
+def test_producer_consumer_shard_path_wiring(tmp_data_dir):
+    """The contract the A100 launch depends on: prepare_data writes shards where
+    the training config reads them (review Important-1 — pack subprocess honors
+    only $LLM_DATA_ROOT, and packs to <DATA_ROOT>/shards/)."""
+    from data.prepare_data import DEFAULT_DATA_ROOT
+
+    assert DEFAULT_DATA_ROOT == Path(__file__).resolve().parents[1] / "data" / "pretrain_chinchilla"
+    # consumer side: config + TrainingConfig default point at <root>/shards
+    cfg = yaml.safe_load((Path(__file__).resolve().parents[1] / "configs" / "pretrain_a100_380m.yaml").read_text())
+    assert cfg["data"]["train_data_path"] == "data/pretrain_chinchilla/shards"
+    # the produced layout is consumable: pack writes <data_root>/shards/shard_*.bin
+    _synthetic_shards(tmp_data_dir / "root" / "shards")
+    assert len(ShardWindows(tmp_data_dir / "root" / "shards", seq_len=_SEQ)) > 0
+
+
 def test_data_config_contract():
     """data/data_config.yaml pins the house shard contract (DESIGN §3 data block)."""
     cfg = yaml.safe_load((Path(__file__).resolve().parents[1] / "data" / "data_config.yaml").read_text())

@@ -6,6 +6,7 @@ options to the shared pipeline. The `shared_data` package must be vendored or
 available from the parent workspace.
 """
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -35,6 +36,11 @@ for _p in (_PROJECT_ROOT, _LLM_ROOT):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+
+# Contract with training/pretrain.py (train_data_path): the shared pipeline packs
+# shards to <DATA_ROOT>/shards/, and pack runs as a subprocess that only honors
+# $LLM_DATA_ROOT — so the shim pins the env var to this root.
+DEFAULT_DATA_ROOT = _PROJECT_ROOT / "data" / "pretrain_chinchilla"
 
 DIFFUSIONGEMMA_TOKENIZER_NAME = "gpt2"
 DIFFUSIONGEMMA_VOCAB_SIZE = 50_257
@@ -84,7 +90,7 @@ def main() -> int:
     parser.add_argument("--mixture", default=None)
     parser.add_argument("--data-config", default=None)
     parser.add_argument("--data-root", default=None,
-                        help="Output root for shards (default: workspace DATA_ROOT)")
+                        help=f"Output root for shards (default: {DEFAULT_DATA_ROOT})")
     parser.add_argument("--source", default=None)
     parser.add_argument("--skip-download", action="store_true")
     parser.add_argument("--skip-clean", action="store_true")
@@ -93,6 +99,12 @@ def main() -> int:
     args = parser.parse_args()
 
     project_data_config = _apply_diffusiongemma_defaults()
+
+    data_root = Path(args.data_root).resolve() if args.data_root else DEFAULT_DATA_ROOT
+    # pack_shards runs as a subprocess and re-resolves DATA_ROOT from the
+    # environment; run_pipeline's in-process set_data_root does not reach it.
+    os.environ["LLM_DATA_ROOT"] = str(data_root)
+    print(f"[data/diffusiongemma] data root: {data_root} (shards → {data_root / 'shards'})")
 
     from shared_data.config import UNIVERSAL_MIXTURE_PATH
     from shared_data.prepare_data import run_pipeline
@@ -105,7 +117,7 @@ def main() -> int:
         skip_clean=args.skip_clean,
         skip_tokenize=args.skip_tokenize,
         skip_pack=args.skip_pack,
-        data_root=Path(args.data_root) if args.data_root else None,
+        data_root=data_root,
     )
 
 
