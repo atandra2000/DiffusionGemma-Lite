@@ -20,7 +20,7 @@ defaults live in `training/pretrain.py:TrainingConfig`.
 | `init_std` | 0.02 | N(0, σ) init; `selfcond.proj` re-zeroed after |
 | `rope_theta` | 500000 | RoPE base (`models/attention.py:apply_rope`) |
 | `max_seq_len` | 4096 | = 16 canvases |
-| `attn_impl` | "sdpa" | production path; "eager" is the ground-truth twin |
+| `attn_impl` | "flex" | fused FlexAttention path; "sdpa" bool-mask fallback; "eager" is the ground-truth twin |
 | `canvas_len` | 256 | the block-AR block size |
 | `n_diffusion_steps` | 16 | train-time T (per-canvas `t ~ U{1..T}`) |
 | `eval_diffusion_steps` | 32 | eval-time max T (`eval T ≤ 32`) |
@@ -35,18 +35,18 @@ defaults live in `training/pretrain.py:TrainingConfig`.
 
 | key | value | meaning |
 |---|---|---|
-| `micro_batch_size` × `gradient_accumulation_steps` | 8 × 4 | effective batch 32 × 4096 |
+| `micro_batch_size` × `gradient_accumulation_steps` | 16 × 2 | effective batch 32 × 4096 (unchanged) |
 | `total_steps` | 61000 | **optimizer** steps ≈ 8.0B tokens |
 | `warmup_steps` | 2000 | linear LR warmup |
 | `lr` / `min_lr_ratio` | 3.0e-4 / 0.05 | cosine decay to 5% of lr |
 | `weight_decay`, `beta1`, `beta2` | 0.1, 0.9, 0.95 | AdamW |
 | `grad_clip` | 1.0 | global-norm clip |
-| `grad_checkpoint` / `grad_checkpoint_every` | true / 3 | boundary-only activations (DESIGN §4.0) |
+| `grad_checkpoint` / `grad_checkpoint_every` | false / 3 | checkpointing off — VRAM-for-MFU trade on 80 GB (DESIGN §5) |
 | `compile` / `compile_mode` | true / max-autotune | per-block in-place, CUDA only |
 | `save_interval` / `log_interval` | 4000 / 50 | optimizer-step cadence (`utils/logging.py:TrainingLogger`) |
 | `nan_guard` / `nan_guard_max_consecutive` | true / 5 | rollback threshold |
 | `save_dir` | checkpoints/pretrain_a100 | `utils/checkpoint.py:CheckpointManager` root |
-| `vocab_chunk` | 8192 | pipeline-internal constant (not a yaml key) |
+| `vocab_chunk` | 8192 (runtime: 8192·8/micro_bs) | pipeline-internal constant (not a yaml key); scaled to hold the §4.0 CE-chain bytes |
 
 ## `data:`
 

@@ -39,15 +39,23 @@ contract, SDD Ruling 15).
 ## Attention paths
 
 - Production: `models/mask.py:block_causal_sdpa_attention` →
-  `F.scaled_dot_product_attention` with the bool mask.
+  `F.scaled_dot_product_attention` with the bool mask (`enable_gqa` consumes
+  untiled K/V).
+- Fused (A100 config default): `models/mask.py:flex_block_causal_attention`
+  → `torch.nn.attention.flex_attention` with a canvas-sized cached `BlockMask`
+  (`models/mask.py:build_block_causal_block_mask`); every block pair is
+  all-or-nothing, so the block-sparse kernel pays no sparsity overhead. The
+  sampler decode chunk passes `mask=None` (full attention == all-ones decode
+  mask).
 - Ground truth: `models/mask.py:eager_block_causal_attention` — explicit
   scores → mask → softmax → @v. **It is deliberate duplication**, exercised
   by weight-transplant equivalence tests; don't consolidate.
 
 Heads: GQA 16 query / 4 KV, head_dim 64, in
-`models/attention.py:DenoiseAttention`; KV heads are tiled to the query-head
-count before SDPA (equal head counts required). Positions: canonical
-GPT-NeoX/LLaMA rotate-half RoPE via `models/attention.py:apply_rope`; a
+`models/attention.py:DenoiseAttention`; the fast kernels consume untiled KV
+heads (`enable_gqa`). Positions: canonical GPT-NeoX/LLaMA rotate-half RoPE
+via cached fp32 cos/sin tables sized to `max_seq_len`
+(`models/attention.py:apply_rope` is the reference implementation); a
 property test pins per-position norm preservation and the relative-position
 identity `q_m·k_n = f(m − n)` (consequence: a uniform position shift changes
 nothing — SDD Ruling 12).

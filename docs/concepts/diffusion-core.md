@@ -40,20 +40,21 @@ and re-noise (`DIFFUSION.md` §1.2). The plan's `xt` wording is a recorded typo.
 
 At micro_bs=8, seq=4096, V=50,257 the full fp32 logits tensor is ~6.6 GB.
 `training/losses.py:chunked_x0_ce` computes `hidden @ E[chunk].T` for one
-8192-token vocab chunk at a time, each chunk under
-`torch.utils.checkpoint(use_reentrant=False)` so only one chunk's fp32
-autograd chain is alive; per-chunk fp32 logsumexp combines into a global lse,
-then the target-logit gather is masked to in-chunk targets. Equivalence to
-eager is pinned at `atol=1e-6` (`tests/test_loss.py`); review measured max
-abs diff **0.0** at production vocab.
+8192-token vocab chunk at a time; each chunk's bf16 logits are retained for
+backward by the `training/losses.py:_ChunkTerms` autograd Function (the
+previous checkpoint scheme re-ran the head GEMM on every backward);
+per-chunk fp32 logsumexp combines into a global lse, then the target-logit
+gather is masked to in-chunk targets. `Pretrainer` scales the chunk
+inversely with micro-batch so retained bytes stay at this budget. Equivalence
+to eager is pinned at `atol=1e-6` for loss and gradients (`tests/test_loss.py`).
 
 The self-cond pre-pass needs `p @ E` without gradients —
 `training/losses.py:chunked_p_embed` does the same chunked dance under
 `no_grad` (an eager full-vocab softmax there would alone blow the budget).
 
 Memory bounds are encoded by `utils/memory.py:estimate_model_memory_gb`
-(§4.0 table; boundaries-only ~1.6 GB under every-3-layer checkpointing) and
-enforced pre-flight by
+(§4.0 table; ~33 GB of retained activations with the grad-checkpointing-off
+80 GB layout) and enforced pre-flight by
 `utils/memory.py:assert_fits_in_available_gpu`.
 
 ## Time conditioning

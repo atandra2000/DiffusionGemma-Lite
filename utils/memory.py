@@ -1,10 +1,12 @@
 """Conservative peak-VRAM estimates for DiffusionGemma-Lite pre-training.
 
 The estimator encodes the DESIGN §4.0 A100 budget table: fp32 AdamW master
-state, boundary activations under every-3 check-pointing, and the CE term that
-motivates ``training/losses.py:chunked_x0_ce`` — a naive full-vocab fp32 CE at
-micro_bs=8/seq=4096 costs ~6.6 GB, chunked ~1.1 GB. The self-conditioning
-pre-pass runs under ``no_grad`` and is therefore free of retained memory.
+state, activations (checkpointed or full), and the CE term that motivates
+``training/losses.py:chunked_x0_ce`` — a naive full-vocab fp32 CE at
+micro_bs=8/seq=4096 costs ~6.6 GB; the chunked path retains every chunk's bf16
+logits (~3.3 GB) plus one transient fp32 chunk (~1.1 GB), buying back the
+head-GEMM checkpoint recompute. The self-conditioning pre-pass runs under
+``no_grad`` and is therefore free of retained memory.
 """
 import logging
 
@@ -43,9 +45,13 @@ def estimate_model_memory_gb(
         if cfg.ffn_dim > 0:
             act_bytes += n_layers * 3 * seq_len * batch_size * cfg.ffn_dim * dtype_bytes
 
-    # CE chain is fp32: full-vocab logits (naive) or one vocab chunk (chunked path).
+    # CE chain: naive = full-vocab fp32 logits; chunked = every chunk's bf16 logits
+    # retained for backward (training/losses.py:_ChunkTerms) + one transient fp32 chunk.
     vocab = cfg.vocab_size if vocab_chunk is None else min(vocab_chunk, cfg.vocab_size)
-    ce_bytes = batch_size * seq_len * vocab * 4
+    if vocab_chunk is None:
+        ce_bytes = batch_size * seq_len * vocab * 4
+    else:
+        ce_bytes = batch_size * seq_len * cfg.vocab_size * 2 + batch_size * seq_len * vocab * 4
 
     # Reserve allocator and framework overhead not represented above.
     if overhead_gb is None:

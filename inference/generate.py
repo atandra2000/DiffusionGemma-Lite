@@ -5,7 +5,7 @@ from typing import Optional
 
 import torch
 
-from models.mask import build_canvas_decode_mask
+from models.mask import build_block_causal_block_mask, build_canvas_decode_mask
 
 
 @dataclass
@@ -40,6 +40,14 @@ class BlockDiffusionSampler:
         self.model = model
         self.cfg = cfg
         self._gen = None
+        self._flex = getattr(model.cfg, "attn_impl", "sdpa") == "flex"
+
+    def _decode_mask(self, prefix_len, device):
+        """The all-visible decode chunk mask. Under flex, mask=None IS full
+        attention — the same semantics without building the all-ones tensor."""
+        if self._flex:
+            return None
+        return build_canvas_decode_mask(prefix_len, self.model.cfg.canvas_len, device=device)
 
     def _generator(self, device):
         if self._gen is None and self.cfg.seed is not None:
@@ -61,21 +69,30 @@ class BlockDiffusionSampler:
         """One forward over the prompt (block-causal among prompt canvases); KV is static."""
         P = prompt_ids.size(1)
         t = self._span_t(0, P, prompt_ids.size(0), 0, prompt_ids.device)
-        h, kv = self.model.backbone(prompt_ids, t, mask=_prefix_mask(P, self.model.cfg.canvas_len,
-                                                                    prompt_ids.device),
+        if self._flex:  # BlockMask builder handles a partial first canvas natively
+            mask = build_block_causal_block_mask(P, self.model.cfg.canvas_len,
+                                                 prompt_ids.device)
+        else:
+            mask = _prefix_mask(P, self.model.cfg.canvas_len, prompt_ids.device)
+        h, kv = self.model.backbone(prompt_ids, t, mask=mask,
                                     positions=self._positions(0, P, prompt_ids.device),
                                     time_steps=self.cfg.n_diffusion_steps, return_kv=True)
         return kv, P
 
     @torch.no_grad()
     def _canvas_step_logits(self, past_kv, prefix_len, canvas_xt, t, sc_input=None):
-        """One denoise forward over a canvas chunk: logits over canvas rows only."""
+        """One denoise forward over a canvas chunk: logits over canvas rows only.
+
+        # ponytail: decode stays eager — kv length grows per canvas, so CUDA-graphing
+        # this step needs a static preallocated KV cache first (then compile the
+        # step with mode="reduce-overhead"). The per-step past-append cat is the
+        # accepted ceiling (~0.1 ms/copy at a 4k prefix)."""
         L = self.model.cfg.canvas_len
-        mask = build_canvas_decode_mask(prefix_len, L, device=canvas_xt.device)
         tt = self._span_t(prefix_len, L, canvas_xt.size(0), t, canvas_xt.device)
         h, _ = self.model.backbone(canvas_xt, tt, past_kv=past_kv,
                                    positions=self._positions(prefix_len, L, canvas_xt.device),
-                                   mask=mask, time_steps=self.cfg.n_diffusion_steps,
+                                   mask=self._decode_mask(prefix_len, canvas_xt.device),
+                                   time_steps=self.cfg.n_diffusion_steps,
                                    return_kv=True)
         return self.model.head_forward(h, sc_input)
 
@@ -87,14 +104,21 @@ class BlockDiffusionSampler:
         logits = self._canvas_step_logits(kv, prefix_len, x, t, sc_input)
         p = logits.softmax(-1)
         conf, am = p.max(-1)
-        q = p.clamp_min(1e-12)
+        q = p.clamp_min(1e-12)          # shared by entropy and the temperature draw
         entropy = (-(q * q.log()).sum(-1)).mean()
         commit = torch.zeros_like(committed) if prev is None else (am == prev[0]) | (conf >= prev[1])
         old_committed = committed
         new = commit & ~old_committed          # fresh value only for positions not yet frozen
         committed = old_committed | commit
-        x0 = am if tau <= 0 else torch.multinomial(
-            (logits / tau).softmax(-1).view(-1, V), 1, generator=generator).squeeze(-1).view(x.shape)
+        x0 = am
+        if tau > 0:
+            # Gumbel-max == sampling softmax(logits/tau) (the old multinomial path),
+            # as one elementwise+argmax — multinomial over (rows x 50k) is a slow
+            # serial kernel. log(q) reuses the entropy clamp; scores are
+            # shift-invariant, so no lse subtraction is needed.
+            gumbel = -torch.log(-torch.log(torch.rand(logits.shape, device=x.device,
+                                                      generator=generator)))
+            x0 = (q.log() / tau + gumbel).argmax(-1)
         noise = torch.randint(0, V, x.shape, device=x.device, generator=generator)
         x = torch.where(new, x0, torch.where(old_committed, x, noise))
         # sc_next: previous step's posterior re-embedded; None until self-conditioning applies
@@ -132,8 +156,7 @@ class BlockDiffusionSampler:
         tt = self._span_t(prefix_len, L, canvas_ids.size(0), 0, canvas_ids.device)
         h, kv = self.model.backbone(canvas_ids, tt, past_kv=kv,
                                     positions=self._positions(prefix_len, L, canvas_ids.device),
-                                    mask=build_canvas_decode_mask(prefix_len, L,
-                                                                  device=canvas_ids.device),
+                                    mask=self._decode_mask(prefix_len, canvas_ids.device),
                                     time_steps=self.cfg.n_diffusion_steps, return_kv=True)
         return kv, prefix_len + L
 
@@ -141,10 +164,16 @@ class BlockDiffusionSampler:
     def generate(self, prompt_ids, max_new_tokens):
         """Block-AR decode: prefill once, then denoise + re-encode canvas by canvas."""
         kv, prefix_len = self.prefill(prompt_ids)
-        out = prompt_ids
         L = self.model.cfg.canvas_len
+        total = prompt_ids.size(1) + max_new_tokens
+        out = torch.empty(prompt_ids.size(0), total, dtype=prompt_ids.dtype,
+                          device=prompt_ids.device)  # preallocated: no per-canvas cat
+        out[:, : prompt_ids.size(1)] = prompt_ids
+        filled = prompt_ids.size(1)
         for _ in range((max_new_tokens + L - 1) // L):
             canvas, _, _ = self.denoise_canvas(kv, prefix_len)
             kv, prefix_len = self.encode_canvas(kv, prefix_len, canvas)
-            out = torch.cat([out, canvas], dim=1)
-        return out[:, : prompt_ids.size(1) + max_new_tokens]
+            n = min(L, total - filled)
+            out[:, filled:filled + n] = canvas[:, :n]
+            filled += n
+        return out

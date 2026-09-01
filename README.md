@@ -87,7 +87,7 @@ Embedding (d_model=1024)  ← weight-tied with LM head
     └─────────────────────────────────────────────────────────┘
     │  (+ zero-init self-conditioning add on the loss path)
     ▼
-chunked x0-CE loss (vocab chunks of 8192 — never materializes (B,T,V) logits)
+chunked x0-CE loss (bf16 chunk logits — never materializes (B,T,V) logits)
 ```
 
 - **Canvas:** `canvas_len=256`, `max_seq_len=4096` (16 canvases).
@@ -155,7 +155,7 @@ python scripts/check_docs.py --coverage        # doc↔code anchor gate
 | Chunked-CE ≡ eager CE at production vocab | ✅ measured: max abs diff **0.0**, grads ≤ 1.7e-7 |
 | 100-step smoke descent + resume bit-equality | ✅ measured on CPU |
 | **8.0B-token A100 training run** | ❌ not started (Task 15 scripts ready for the pod) |
-| **MFU ≥ 33%, peak VRAM < 15 GB, wall-clock speedup vs AR** | ❌ GPU gates pending |
+| **MFU ≥ 33%, peak VRAM within the §5 80 GB budget, wall-clock speedup vs AR** | ❌ GPU gates pending |
 | **Loss parity vs AR baseline (± disclosure)** | ❌ needs trained checkpoint + baseline run |
 
 The AR-baseline side of the headline is analytic (1 token/forward by

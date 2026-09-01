@@ -53,8 +53,9 @@ def test_chunked_ce_term_bounds_memory_estimate():
     naive = estimate_model_memory_gb(m380, seq_len=4096, batch_size=8, vocab_chunk=None)
     chunked = estimate_model_memory_gb(m380, seq_len=4096, batch_size=8, vocab_chunk=8192)
     assert naive > chunked
-    # 8 x 4096 x (50257-8192) fp32 ~= 5.1 GB of CE chain avoided by chunking.
-    assert naive - chunked > 5.0
+    # naive 6.6 GB fp32 vs chunked ~4.4 GB (all bf16 chunk logits retained for
+    # backward + one transient fp32 chunk): ~2.2 GB of CE chain avoided by chunking.
+    assert naive - chunked > 2.0
 
 def test_gpu_guard_noops_without_cuda():
     if torch.cuda.is_available():

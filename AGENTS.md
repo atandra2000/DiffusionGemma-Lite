@@ -43,16 +43,18 @@ python3 scripts/check_docs.py --coverage      # doc↔code symbol anchors
   (`q_sample` is train-time only); committed positions are never overwritten;
   eval passes `time_steps=SamplerConfig.n_diffusion_steps` (not the model's
   train-time 16).
-- GQA 16Q/4KV head_dim 64 · rope rotate-half · SDPA production path with an
-  eager ground-truth twin (`models/mask.py:eager_block_causal_attention`) —
-  do not delete the "duplicate".
+- GQA 16Q/4KV head_dim 64 · rope rotate-half (cached fp32 cos/sin tables) ·
+  FlexAttention fused path (`attn_impl: "flex"`, `models/mask.py:flex_block_causal_attention`)
+  with an sdpa bool-mask fallback and an eager ground-truth twin
+  (`models/mask.py:eager_block_causal_attention`) — do not delete the "duplicate".
 
 ## 2. Hard rules
 
 1. **Pure PyTorch.** No HuggingFace Trainer/Lightning, no diffusion
-   libraries, no custom CUDA/Triton kernels. The two eager-vs-SDPA attention
-   branches and the eager CE reference (`models/diffusion.py:x0_ce_loss`)
-   are deliberate regression oracles — never consolidate them away.
+   libraries, no custom CUDA/Triton kernels. The eager-vs-SDPA-vs-flex
+   attention branches and the eager CE reference
+   (`models/diffusion.py:x0_ce_loss`) are deliberate regression oracles —
+   never consolidate them away.
 2. **Never materialize full-vocab training logits.** The production loss is
    `training/losses.py:chunked_x0_ce` (and `chunked_p_embed` for the
    self-cond pre-pass); `x0_ce_loss` is the eager test reference only. At

@@ -93,6 +93,10 @@ class Pretrainer:
         self.loss_history: List[float] = []
 
         self._log("Initialising DiffusionGemma-Lite...")
+        if self.device.type == "cpu" and config.model_config.attn_impl == "flex":
+            # flex has no CPU backward kernel; keep CPU smoke runs on the sdpa path
+            self._log("[warn] FlexAttention has no CPU backward — smoke run uses attn_impl='sdpa'.")
+            config.model_config.attn_impl = "sdpa"
         torch.manual_seed(config.seed)
         raw_model = DiffusionGemma(config.model_config).to(self.device)
         total, trainable = count_parameters(raw_model)
@@ -121,7 +125,7 @@ class Pretrainer:
         self.optimizer = AdamW([
             {"params": decay_params, "weight_decay": config.weight_decay},
             {"params": no_decay_params, "weight_decay": 0.0},
-        ], lr=config.lr, betas=(config.beta1, config.beta2), fused=False)
+        ], lr=config.lr, betas=(config.beta1, config.beta2), fused=self.device.type == "cuda")
 
         from torch.optim.lr_scheduler import SequentialLR, LinearLR, CosineAnnealingLR
         warmup = LinearLR(self.optimizer, start_factor=0.01, end_factor=1.0,
@@ -132,6 +136,9 @@ class Pretrainer:
                                       milestones=[config.warmup_steps])
         self.amp_dtype = (torch.bfloat16 if torch.cuda.is_available()
                           and torch.cuda.is_bf16_supported() else torch.float32)
+        # §4.0 states the CE-chain budget at micro_bs 8; scale the vocab chunk
+        # inversely with micro-batch so retained chunk-logit bytes stay constant.
+        self.vocab_chunk = max(1024, config.vocab_chunk * 8 // config.micro_batch_size)
 
     # --- setup helpers ---------------------------------------------------------
 
@@ -179,12 +186,12 @@ class Pretrainer:
                 if mc.self_cond_detach:
                     with torch.no_grad():  # DESIGN §2.4: detached pre-pass, half the double cost
                         sc_input = chunked_p_embed(model.backbone(xt, t), model.embed.weight,
-                                                   vocab_chunk=self.config.vocab_chunk)
+                                                   vocab_chunk=self.vocab_chunk)
                 else:
                     sc_input = chunked_p_embed(model.backbone(xt, t), model.embed.weight,
-                                               vocab_chunk=self.config.vocab_chunk)
+                                               vocab_chunk=self.vocab_chunk)
             return chunked_x0_ce(model.final_hidden(xt, t, sc_input), model.embed.weight, x0,
-                                 vocab_chunk=self.config.vocab_chunk)
+                                 vocab_chunk=self.vocab_chunk)
 
     def train_step(self, x0: torch.Tensor, micro_step: int) -> Optional[float]:
         """One micro-step; optimizer updates land at accumulation boundaries."""
@@ -243,7 +250,8 @@ class Pretrainer:
         seq_len = cfg.model_config.max_seq_len
         while self._opt_steps < total:
             loader = build_dataloader(cfg.data_path, seq_len, cfg.micro_batch_size,
-                                      seed=cfg.seed, offset_batches=self._micro_count)
+                                      seed=cfg.seed, offset_batches=self._micro_count,
+                                      pin_memory=torch.cuda.is_available())
             if len(loader) == 0:
                 raise RuntimeError(
                     f"No complete {seq_len}-token windows for micro_batch_size "

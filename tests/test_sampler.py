@@ -100,3 +100,27 @@ def test_adaptive_off_ignores_entropy(tiny_model, device):
     kv, prefix_len = s.prefill(torch.randint(0, V, (1, 16), device=device))
     _, steps_used, _ = s.denoise_canvas(kv, prefix_len)
     assert steps_used == 8
+
+
+def test_gumbel_temperature_draw(tiny_model, device):
+    """The Gumbel-max draw matches softmax(logits/tau) sampling: near-argmax at low
+    tau, spread across the vocab at high tau."""
+    V, L = tiny_model.cfg.vocab_size, tiny_model.cfg.canvas_len
+    s = BlockDiffusionSampler(tiny_model, SamplerConfig(n_diffusion_steps=4, seed=6))
+    kv, prefix_len = s.prefill(torch.randint(0, V, (1, 16), device=device))
+    g = torch.Generator(device=device)
+    g.manual_seed(11)
+    x = torch.randint(0, V, (1, L), device=device, generator=g)
+    committed = torch.zeros(1, L, dtype=torch.bool, device=device)
+
+    _, _, _, _, _, x0_low = s._denoise_step(
+        kv, prefix_len, x, committed, None, t=4, tau=0.01, sc_input=None, generator=g)
+    logits = s._canvas_step_logits(kv, prefix_len, x, t=4)
+    assert torch.equal(x0_low, logits.argmax(-1))     # tau -> 0 collapses to argmax
+
+    counts = torch.zeros(V, device=device)
+    for _ in range(200):
+        _, _, _, _, _, x0 = s._denoise_step(
+            kv, prefix_len, x, committed, None, t=4, tau=20.0, sc_input=None, generator=g)
+        counts += torch.bincount(x0[0], minlength=V).float()
+    assert (counts > 0).float().mean() > 0.5          # high tau spreads the draw
