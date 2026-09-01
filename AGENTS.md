@@ -17,7 +17,7 @@ python3 scripts/check_docs.py --coverage      # doc↔code symbol anchors
 > **Project:** `LLM/DiffusionGemma-Lite/` · **Type:** block-AR discrete
 > diffusion LM (uniform-state) · **Scale:** 343,516,160 params (~343.5M — NOT
 > the "~380M" of early planning docs; their table counted full-MHA K/V) ·
-> 8.0B Chinchilla-optimal tokens · 14–18 h on A100 80GB (pending).
+> 8.0B Chinchilla-optimal tokens · ~40–50 h on A100 80GB at 35–40% MFU (pending).
 > **Stack:** PyTorch only — no diffusion library, no custom CUDA, no Triton.
 > **Hardware:** A100 80GB (no offloading).
 > **Architecture detail:** `DIFFUSION.md` is authoritative; `docs/README.md`

@@ -1,6 +1,8 @@
 # configs/pretrain_a100_380m.yaml
-# DiffusionGemma-Lite ~380M param Chinchilla-optimal pre-training.
-# Designed for 1x A100 80GB SXM. Target: ~14-18 h at 35-40% MFU.
+# DiffusionGemma-Lite Chinchilla-optimal pre-training (343.5M params; early
+# planning docs' "~380M" counted full-MHA K/V — see README).
+# Designed for 1x A100 80GB SXM. ~1.85e19 train FLOPs (6·N·D + ~12% self-cond)
+# → ~40–50 h at 35–40% MFU (vs 312 TFLOPS dense-BF16 peak).
 #
 # Architecture: d_model=1024, 24 dense layers, block-causal attention
 #               (GQA 16Q/4KV, head_dim=64), uniform-state block diffusion:
