@@ -70,6 +70,31 @@ and that the loss path adds conditioning exactly once
 - `BROKEN-LINK` → a markdown link target doesn't exist (check both
   doc-relative and repo-root-relative resolution).
 
+## Chunked-CE disagrees with the eager loss
+
+Equivalence (loss + grads, atol 1e-6) is pinned by
+`tests/test_loss.py::test_chunked_equals_eager` and
+`test_chunked_matches_eager_grad_direction`. If they drift:
+
+1. The fp32 logsumexp per chunk is load-bearing — a bf16 logsumexp drifts
+   across 50,257-vocab chunks (`training/losses.py:chunked_x0_ce`).
+2. The custom autograd Function
+   (`training/losses.py:_ChunkTerms`) must save the **bf16** logits and
+   derive softmax from them in backward — saving fp32 doubles retained
+   memory, recomputing the GEMM defeats the point.
+3. Partial last chunk: `V = 50,257` is not a multiple of 8192 — the last
+   chunk is 1,153 wide; `tests/test_loss.py::test_partial_last_chunk` pins
+   it. A hand-rolled `range(0, V, chunk)` without the clamp hits it.
+
+## Empty loader / wrong window counts
+
+`No complete {seq_len}-token windows` (`training/pretrain.py:Pretrainer.train`)
+means shard windows < 1: shard shorter than `seq_len`, or
+`micro_batch_size × seq` exceeding available windows. Verify window counts
+directly (`data/dataset.py:ShardWindows.n_windows`, 12,207 per 50M-token
+shard at seq 4,096) before blaming the trainer. Data pipeline internals:
+[data-pipeline](../concepts/data-pipeline.md).
+
 ## Shape errors cheat-sheet
 
 | error | likely cause |

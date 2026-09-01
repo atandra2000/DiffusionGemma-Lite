@@ -138,10 +138,12 @@ python scripts/check_docs.py --coverage        # doc↔code anchor gate
 | doc | contents |
 |---|---|
 | [`DIFFUSION.md`](DIFFUSION.md) | **the authoritative technical doc** — diffusion math, mask derivation, self-conditioning, sampler semantics, training recipe, recipe deltas vs upstream |
-| [`docs/README.md`](docs/README.md) | doc map |
-| `docs/concepts/` | diffusion core, block-causal attention, self-conditioning |
-| `docs/guides/` | quickstart, debugging playbook |
-| `docs/references/` | config reference, API reference |
+| [`docs/README.md`](docs/README.md) | doc map + reading order + gates |
+| `docs/concepts/foundations.md` | the from-scratch textbook chapter (AR → diffusion → primitives → worked pass) |
+| `docs/concepts/` | diffusion core, block-causal attention, self-conditioning, sampler, memory engineering, data pipeline |
+| `docs/training.md` / `docs/inference.md` | pipeline walkthroughs (loop, determinism, recovery / harness, metrics, honest gaps) |
+| `docs/references/` | per-module symbol-anchored API references (R1–R7) |
+| `docs/guides/` | quickstart, debugging playbook, sampler tuning, benchmarking, checkpoint ops, contributing |
 | [`AGENTS.md`](AGENTS.md) | coding-agent contract (rules, caveats) |
 | [`SKILLS.md`](SKILLS.md) | day-to-day developer workflows |
 
