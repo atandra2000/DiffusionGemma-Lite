@@ -33,7 +33,7 @@ language model, built end-to-end from scratch — no diffusion library, no
    left-to-right LM factorization).
 3. **Entropy-bounded adaptive stopping.** A closed rule — stop refining a
    canvas when its posterior entropy settles — cuts eval forwards without any
-   learned halting policy (`inference/generate.py:denoise_canvas`).
+   learned halting policy (`inference/generate.py:BlockDiffusionSampler.denoise_canvas`).
 
 Plus self-conditioning with zero-init equivalence
 (`models/selfcond.py:SelfConditioning`): the model sees its previous step's

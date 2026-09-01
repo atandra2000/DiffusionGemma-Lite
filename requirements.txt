@@ -1,6 +1,5 @@
-torch>=2.4
-numpy
-pyyaml
-safetensors
-pytest
-# wandb  # optional; enable for full training runs
+torch>=2.1
+numpy>=1.24
+pyyaml>=6.0
+safetensors>=0.4
+pytest>=7.0
