@@ -78,7 +78,7 @@ softmax — no marginalization over trajectories is needed at any point.
 During training the model's `time_steps` argument stays at the train-time `T`;
 at eval the sampler passes `time_steps=SamplerConfig.n_diffusion_steps` so
 `t/T ∈ (0,1]` stays correctly normalized for eval schedules `T ≤ 32`
-(`inference/generate.py:prefill`, `inference/generate.py:_canvas_step_logits`).
+(`inference/generate.py:BlockDiffusionSampler.prefill`, `inference/generate.py:BlockDiffusionSampler._canvas_step_logits`).
 At `t=0` (prompt / finalized canvases during prefill and re-encode) the
 embedding is T-independent by construction.
 
@@ -165,8 +165,8 @@ pass 2 (grad):     h  = f(xt, t, sc = detach(sc))
   `atol=0, rtol=0`. Training therefore starts from the no-sc model and
   *learns* how much to use the conditioning.
 - Routing invariant (SDD Ruling 6): the add happens **exactly once per
-  path**. `models/transformer.py:final_hidden` = backbone + the `W_sc` add
-  and is the loss path; `models/transformer.py:head_forward` applies the same
+  path**. `models/transformer.py:DiffusionGemma.final_hidden` = backbone + the `W_sc` add
+  and is the loss path; `models/transformer.py:DiffusionGemma.head_forward` applies the same
   single add before the LM head. Never compose the two.
 - Detachment (DESIGN §2.4): pass 1 runs under `torch.no_grad()` and its
   output enters pass 2 **detached** — the pre-pass is an input constructor,
@@ -178,7 +178,7 @@ Re-embedding the posterior means materializing `p @ E` — a full-vocab softmax
 at `(8, 4096, 50257)` fp32 would blow the §4.0 memory budget by itself.
 `chunked_p_embed` computes the same product one vocab chunk at a time under
 `no_grad` for the self-cond pre-pass, and the sampler reuses the same idea
-inline (`inference/generate.py:_denoise_step` computes `sc_next = p @ E` for
+inline (`inference/generate.py:BlockDiffusionSampler._denoise_step` computes `sc_next = p @ E` for
 the cross-step conditioning at eval).
 
 ### 3.3 Attribution
@@ -204,12 +204,12 @@ for each canvas:
     encode_canvas(kv, prefix_len)    # re-encode the finalized canvas + KV append
 ```
 
-- `inference/generate.py:prefill` — one forward over the prompt under
-  `models/mask.py:_prefix_mask`'s partial-canvas block-causal mask.
-- `inference/generate.py:denoise_canvas` — starts from pure uniform noise
+- `inference/generate.py:BlockDiffusionSampler.prefill` — one forward over the prompt under
+  `inference/generate.py:_prefix_mask`'s partial-canvas block-causal mask.
+- `inference/generate.py:BlockDiffusionSampler.denoise_canvas` — starts from pure uniform noise
   (`torch.randint`, **not** `q_sample`: the sampler redraws the noise
   distribution itself; `q_sample` is train-time corruption only, SDD Ruling 17).
-- `inference/generate.py:encode_canvas` — re-encodes the finalized canvas
+- `inference/generate.py:BlockDiffusionSampler.encode_canvas` — re-encodes the finalized canvas
   under the all-ones `models/mask.py:build_canvas_decode_mask` and appends its
   KV to the cache. The cached KV must equal what a fresh single-shot
   block-causal forward would write — enforced bit-exactly (fp64) by
@@ -222,7 +222,7 @@ forward passes*, not a smaller cache.
 
 ### 4.2 The commit rule
 
-Inside a denoise step (`inference/generate.py:_denoise_step`):
+Inside a denoise step (`inference/generate.py:BlockDiffusionSampler._denoise_step`):
 
 ```
 p      = softmax(logits)                        # x̂0 posterior
@@ -248,9 +248,9 @@ x      = where(new, x̂0_draw, where(old_committed, x, uniform_noise))
 ### 4.3 Eval-time time normalization
 
 The sampler passes `time_steps = SamplerConfig.n_diffusion_steps` through
-every forward (`inference/generate.py:prefill`,
-`inference/generate.py:_canvas_step_logits`,
-`inference/generate.py:encode_canvas`), so eval at `T_eval ≤ 32` keeps
+every forward (`inference/generate.py:BlockDiffusionSampler.prefill`,
+`inference/generate.py:BlockDiffusionSampler._canvas_step_logits`,
+`inference/generate.py:BlockDiffusionSampler.encode_canvas`), so eval at `T_eval ≤ 32` keeps
 `t/T ∈ (0,1]` in the range the time embedding was normalized to. Prompt and
 finalized canvases enter at `t=0`. (SDD Ruling 16; refines DESIGN §2.5's
 silence on eval normalization.)
@@ -265,7 +265,7 @@ entropy_t = mean over canvas positions of H[p(·|position)]
 if entropy_t < entropy_threshold for stability_steps consecutive steps: stop
 ```
 
-- Implementation: the tail of `inference/generate.py:denoise_canvas`.
+- Implementation: the tail of `inference/generate.py:BlockDiffusionSampler.denoise_canvas`.
 - Contract: with `adaptive=False` the loop ignores entropy and runs the full
   schedule — the fallback is bit-identical to the fixed sampler
   (`tests/test_sampler.py::test_adaptive_off_ignores_entropy`).
@@ -403,7 +403,7 @@ Upstream adaptive-length/adaptive-compute methods spend RL or distillation
 budget to learn *when to stop* (a learned halting policy). This repo's
 adaptive stopping is a **closed rule**: stop when the mean posterior entropy
 over the canvas stays below a threshold for `stability_steps` consecutive
-steps (`inference/generate.py:denoise_canvas`). No extra training phase, no
+steps (`inference/generate.py:BlockDiffusionSampler.denoise_canvas`). No extra training phase, no
 reward model, no halting head — the posterior's own entropy *is* the signal,
 because the model was trained to sharpen it toward the x0 posterior at every
 `tau`. The trade-off: the threshold is a hyperparameter (calibratable in
