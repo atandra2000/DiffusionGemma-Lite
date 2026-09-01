@@ -5,7 +5,7 @@ a Gemma-class dense transformer that generates text **256 tokens at a time**,
 denoising each canvas in parallel from uniform noise over a small number of
 diffusion steps.
 
-**~343.5M params (exactly 343,516,160) · 8.0B Chinchilla-optimal tokens · target 14–18 h on a single A100 80GB · canvas 256 · GPT-2 BPE**
+**~343.5M params (exactly 343,516,160) · 8.0B Chinchilla-optimal tokens · ~40–50 h on a single A100 80GB at 35–40% MFU · canvas 256 · GPT-2 BPE**
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![PyTorch 2.1+](https://img.shields.io/badge/PyTorch%202.1%2B-EE4C2C?logo=pytorch&logoColor=white)](https://www.pytorch.org/)
