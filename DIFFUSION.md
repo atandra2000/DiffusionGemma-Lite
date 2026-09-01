@@ -125,21 +125,30 @@ binding sentence is the last one of §2.5: "canvas = last block in the mask".)
 ### 2.3 Attention implementation
 
 - Production path: `models/mask.py:block_causal_sdpa_attention` →
-  `F.scaled_dot_product_attention` with the boolean mask.
+  `F.scaled_dot_product_attention` with the boolean mask and `enable_gqa`
+  (the kernel consumes untiled K/V — no repeat_interleave expansion).
+- Fused path (the A100 config default): `models/mask.py:flex_block_causal_attention`
+  → `torch.nn.attention.flex_attention` with a canvas-sized `BlockMask`
+  (`models/mask.py:build_block_causal_block_mask`, cached). Canvas-sized blocks
+  make every block pair all-or-nothing, so the fused block-sparse kernel runs at
+  full density. Under flex the sampler decode chunk passes `mask=None`
+  (no block mask == full attention == the all-ones decode mask).
 - Ground-truth path: `models/mask.py:eager_block_causal_attention` — an
   explicit O(T²) scores→mask→softmax→@v mirror, kept (do not "clean it up")
-  because `tests/test_attention.py` transplants weights between the eager
-  branch and SDPA to prove they agree.
-- Heads: GQA `16` query / `4` KV heads, `head_dim=64`; KV heads are tiled to
-  the query head count *before* the SDPA helper (SDPA requires equal head
-  counts) — `models/attention.py:DenoiseAttention`.
-- Positions: RoPE in the canonical GPT-NeoX/LLaMA rotate-half form
-  (`models/attention.py:apply_rope`). A regression property test pins that
-  RoPE preserves per-position norms and that `q·k` depends only on `m − n`.
-  Note the consequence: a uniform +c shift of all positions leaves attention
-  unchanged — the plan's original "shifted positions → different attention"
-  test could only pass against a buggy interleaved-frequency rope, so the
-  test asserts relative spacing instead (SDD Ruling 12).
+  because `tests/test_attention.py` and `tests/test_models.py` transplant
+  weights between the eager branch and the fast paths to prove they agree.
+- Heads: GQA `16` query / `4` KV heads, `head_dim=64` —
+  `models/attention.py:DenoiseAttention`.
+- Positions: RoPE in the canonical GPT-NeoX/LLaMA rotate-half form. Production
+  forwards use DenoiseAttention's cached fp32 cos/sin tables sized to
+  `max_seq_len` (the trig was previously recomputed in every layer per
+  forward); `models/attention.py:apply_rope` is the reference implementation
+  the property tests pin (per-position norm preservation; `q·k` depends only
+  on `m − n`). Note the consequence: a uniform +c shift of all positions
+  leaves attention unchanged — the plan's original "shifted positions →
+  different attention" test could only pass against a buggy
+  interleaved-frequency rope, so the test asserts relative spacing instead
+  (SDD Ruling 12).
 
 ---
 
@@ -284,24 +293,34 @@ if entropy_t < entropy_threshold for stability_steps consecutive steps: stop
 
 The naive training step materializes full-vocab logits `(B, T, V)`:
 
-| term (micro_bs=8, seq=4096, V=50,257) | naive | chunked (`vocab_chunk=8192`) |
+| term (micro_bs=8, seq=4096, V=50,257) | naive | chunked |
 |---|---|---|
-| fp32 logits/CE chain | ~6.6 GB | **~1.1 GB** (one chunk alive at a time) |
+| CE-chain logits | ~6.6 GB (fp32) | **~4.4 GB** (every chunk's bf16 logits retained + one transient fp32 chunk) |
 | params + AdamW fp32 state | ~5.5 GB | ~5.5 GB |
-| boundary activations (grad-ckpt every 3) | ~1.6 GB | ~1.6 GB |
+| activations (grad-ckpt off) | ~33 GB | ~33 GB |
 
 - `training/losses.py:chunked_x0_ce` computes `hidden @ E[chunk].T` one chunk
-  at a time; each chunk's logits are computed under
-  `torch.utils.checkpoint(use_reentrant=False)` so only **one chunk's fp32
-  autograd chain is alive** at a time; the loss combines per-chunk fp32
-  logsumexp → global logsumexp → target-logit gather, so the result equals the
-  eager CE to 0.0 max abs diff at production vocab (verified in review;
-  `tests/test_loss.py::test_chunked_equals_eager` pins `atol=1e-6`).
+  at a time; each chunk's **bf16 logits are retained for backward** by the
+  `training/losses.py:_ChunkTerms` autograd Function, which derives the
+  softmax from them in backward. This replaced the earlier
+  `torch.utils.checkpoint` scheme, which re-ran the head GEMM on every
+  backward — the retained bf16 chain (~3.3 GB) buys back one full head-GEMM
+  forward per step. `training/pretrain.py:Pretrainer` scales `vocab_chunk`
+  inversely with micro-batch (8192·8/micro_bs) so the retained bytes stay at
+  the micro_bs=8 budget.
+- The loss combines per-chunk fp32 logsumexp → global logsumexp →
+  target-logit gather, so the result equals the eager CE (`tests/test_loss.py`
+  pins `atol=1e-6` for both loss and gradients).
 - The self-cond pre-pass has its own full-vocab hazard (`p @ E`), handled by
   `training/losses.py:chunked_p_embed` (§3.2).
 - `utils/memory.py:estimate_model_memory_gb` encodes the §4.0 table and is
   monotone in batch; `utils/memory.py:assert_fits_in_available_gpu` turns the
   estimate into a pre-flight raise (logged, never silent, if the probe fails).
+- VRAM-for-MFU trade (A100 80 GB): the production config runs grad
+  checkpointing **off** (micro_bs 16 × accum 2 keeps the effective 32×4096
+  batch), retaining the ~33 GB of SwiGLU/boundary activations instead of
+  paying the every-3-layer recompute. The §4.0 table's 15 GB-class figures
+  described the old 8×4 + checkpoint layout.
 - `torch.compile` scope: per-block in-place on CUDA only
   (`training/pretrain.py:Pretrainer._compile_blocks`); corruption, loss, and
   sampler stay eager so numerics are reproducible.
@@ -314,11 +333,11 @@ driven by `configs/pretrain_a100_380m.yaml` via
 
 | knob | value | note |
 |---|---|---|
-| steps | 61,000 optimizer steps | ~8.0B tokens / (8 · 4 · 4096) — Chinchilla-optimal for ~343.5M params |
-| batch | micro_bs 8 × grad_accum 4 | `total_steps`/`save_interval`/`log_interval` count **optimizer** steps |
-| optimizer | AdamW lr 3e-4, β (0.9, 0.95), wd 0.1 | linear warmup 2000 → cosine to 5% (`min_lr_ratio`) |
+| steps | 61,000 optimizer steps | ~8.0B tokens / (16 · 2 · 4096) — Chinchilla-optimal for ~343.5M params |
+| batch | micro_bs 16 × grad_accum 2 | `total_steps`/`save_interval`/`log_interval` count **optimizer** steps |
+| optimizer | AdamW lr 3e-4, β (0.9, 0.95), wd 0.1, fused | linear warmup 2000 → cosine to 5% (`min_lr_ratio`) |
 | precision | BF16 autocast + TF32 | `training/pretrain.py:Pretrainer` |
-| grad | clip 1.0, checkpoint every 3 layers | `grad_ckpt_every` |
+| grad | clip 1.0, no grad checkpointing | VRAM-for-MFU trade, §5 (80 GB A100) |
 | NaN guard | 5 consecutive → rollback | `utils/checkpoint.py:CheckpointManager` |
 | checkpoints | every 4,000 steps, 3 files each | weights safetensors + optim + meta; a step is resumable only when all three exist |
 

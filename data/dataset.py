@@ -66,11 +66,16 @@ class ShuffledRangeSampler(Sampler):
         return len(self.indices) - self.offset
 
 
-def build_dataloader(data_dir, seq_len, batch_size, seed=42, offset_batches=0):
-    """Deterministic shuffled loader over shard windows; offset resumes the order."""
+def build_dataloader(data_dir, seq_len, batch_size, seed=42, offset_batches=0,
+                     pin_memory=False):
+    """Deterministic shuffled loader over shard windows; offset resumes the order.
+
+    ``pin_memory`` (CUDA only) makes the trainer's ``non_blocking=True`` H2D copy
+    actually asynchronous — without it that flag is a no-op."""
     ds = ShardWindows(data_dir, seq_len)
     sampler = ShuffledRangeSampler(len(ds), seed=seed, offset=offset_batches * batch_size)
-    return DataLoader(ds, batch_size=batch_size, sampler=sampler, drop_last=True)
+    return DataLoader(ds, batch_size=batch_size, sampler=sampler, drop_last=True,
+                      pin_memory=pin_memory)
 
 
 __all__ = ["ShardWindows", "ShuffledRangeSampler", "build_dataloader"]

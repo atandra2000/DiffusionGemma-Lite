@@ -72,6 +72,24 @@ def test_eager_attn_impl_matches_sdpa(tiny_cfg, device):
     assert max_diff < 1e-5, f"eager diverges from sdpa: max |diff| = {max_diff:.3e}"
 
 
+@pytest.mark.numeric
+def test_flex_attn_impl_matches_sdpa(tiny_cfg, device):
+    # flex branch: BlockMask block-causal kernel must match the bool-mask sdpa path
+    try:
+        flex_cfg = replace(tiny_cfg, attn_impl="flex")
+        flex = DiffusionGemma(flex_cfg).to(device)
+    except Exception as e:  # CPU/CUDA builds without flex support
+        pytest.skip(f"flex_attention unavailable: {e}")
+    sdpa = DiffusionGemma(tiny_cfg).to(device)
+    flex.load_state_dict(sdpa.state_dict())
+    torch.manual_seed(1)
+    x = torch.randint(0, 256, (2, 64), device=device)
+    t = torch.randint(1, 5, (2, 2), device=device)
+    with torch.no_grad():
+        max_diff = (sdpa(x, t) - flex(x, t)).abs().max().item()
+    assert max_diff < 1e-5, f"flex diverges from sdpa: max |diff| = {max_diff:.3e}"
+
+
 def test_yaml_config_roundtrip():
     cfg = DiffusionGemmaConfig.from_yaml("configs/pretrain_a100_380m.yaml")
     assert cfg.d_model == 1024 and cfg.canvas_len == 256

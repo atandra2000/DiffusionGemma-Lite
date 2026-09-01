@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 from models.block import DenoiseBlock, RMSNorm
-from models.mask import build_block_causal_mask
+from models.mask import build_block_causal_block_mask, build_block_causal_mask
 from models.selfcond import SelfConditioning
 from models.time_embed import CanvasTimeEmbedding
 
@@ -51,7 +51,7 @@ class DiffusionGemma(nn.Module):
 
     def __init__(self, cfg: DiffusionGemmaConfig):
         super().__init__()
-        assert cfg.attn_impl in ("sdpa", "eager"), f"unknown attn_impl: {cfg.attn_impl!r}"
+        assert cfg.attn_impl in ("sdpa", "eager", "flex"), f"unknown attn_impl: {cfg.attn_impl!r}"
         self.cfg = cfg
         self.grad_ckpt_every = None  # runtime knob: training loop sets from config §3 training:
         self.embed = nn.Embedding(cfg.vocab_size, cfg.d_model)
@@ -84,19 +84,31 @@ class DiffusionGemma(nn.Module):
         canvas_ids = positions // self.cfg.canvas_len - (positions[0] // self.cfg.canvas_len)
         return h + self.time_embed(t, time_steps)[:, canvas_ids]
 
+    def _build_mask(self, seq_len, device):
+        """Block-causal mask in the flavor attn_impl consumes: bool (1,1,T,T) for
+        sdpa/eager, BlockMask for flex."""
+        if self.cfg.attn_impl == "flex":
+            return build_block_causal_block_mask(seq_len, self.cfg.canvas_len, device)
+        return build_block_causal_mask(seq_len, self.cfg.canvas_len, device=device)
+
     def backbone(self, input_ids, t, past_kv=None, positions=None, mask=None,
                  time_steps=None, return_kv=False):
         """Token embed + canvas-time embed + blocks -> post-final-norm hidden (B, T, D).
 
         Full-sequence path leaves positions/mask/past_kv unset. Decode path: positions
         are absolute, mask is the caller's (1,1,T,T_total) bool, past_kv is per-layer
-        (k, v) with roped k; return_kv adds the new per-layer kvs."""
+        (k, v) with roped k; return_kv adds the new per-layer kvs. Under flex the
+        decode chunk may pass mask=None: no block mask == full attention, which is
+        exactly the all-ones decode-mask semantics."""
         T = input_ids.size(1)
         if positions is None:
             positions = torch.arange(T, device=input_ids.device)
         if mask is None:
-            assert past_kv is None, "a past_kv forward needs an explicit decode mask"
-            mask = build_block_causal_mask(T, self.cfg.canvas_len, device=input_ids.device)
+            if past_kv is not None:
+                assert self.cfg.attn_impl == "flex", \
+                    "a past_kv forward needs an explicit decode mask (flex: mask=None = all-visible)"
+            else:
+                mask = self._build_mask(T, input_ids.device)
         h = self._add_canvas_time(self.embed(input_ids), t, positions,
                                   time_steps or self.cfg.n_diffusion_steps)
         kvs = []
