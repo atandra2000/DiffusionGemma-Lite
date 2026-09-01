@@ -63,3 +63,7 @@ docs_html/
 
 # Agent plan artifacts
 .superpowers/
+.docs-authoring/
+
+# Regenerable diagram build artifacts (visual-check HTML/PNG/JSON)
+docs/diagrams/
