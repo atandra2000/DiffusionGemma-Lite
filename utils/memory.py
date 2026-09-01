@@ -6,8 +6,12 @@ motivates ``training/losses.py:chunked_x0_ce`` — a naive full-vocab fp32 CE at
 micro_bs=8/seq=4096 costs ~6.6 GB, chunked ~1.1 GB. The self-conditioning
 pre-pass runs under ``no_grad`` and is therefore free of retained memory.
 """
+import logging
+
 import torch
 import torch.nn as nn
+
+logger = logging.getLogger(__name__)
 
 
 def estimate_model_memory_gb(
@@ -60,7 +64,8 @@ def assert_fits_in_available_gpu(estimate_gb: float, safety_margin_gb: float = 2
         return
     try:
         available = torch.cuda.get_device_properties(0).total_memory / 1024**3
-    except Exception:
+    except Exception as e:
+        logger.warning("[memory] VRAM guard skipped — could not probe device: %s", e)
         return
     if estimate_gb > available - safety_margin_gb:
         raise RuntimeError(
