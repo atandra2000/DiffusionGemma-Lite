@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DiffusionGemma-Lite End-to-End System Architecture",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "viewBox": [1380, 740]
+  },
+  "components": [
+    { "id": "data-source", "type": "database", "label": "Sharded Data Engine", "sublabel": "50M tokens · GPT-2 BPE", "tag": "8.0B tokens flat", "pos": [40, 350], "size": [165, 64] },
+    { "id": "time-embed", "type": "backend", "label": "Canvas Time Embedding", "sublabel": "sinusoidal t/T → d=256", "tag": "per 256 tokens", "pos": [280, 145], "size": [170, 64] },
+    { "id": "noise-process", "type": "backend", "label": "Uniform q_sample", "sublabel": "ᾱ(t) = cos²(π/2·t/T)", "tag": "train t ~ U{1..16}", "pos": [280, 350], "size": [170, 64] },
+    { "id": "block-mask", "type": "security", "label": "Block-Causal Mask", "sublabel": "causal across · bi within", "tag": "FlexAttn / SDPA", "pos": [280, 555], "size": [170, 64] },
+    { "id": "self-cond", "type": "backend", "label": "Detached Self-Cond", "sublabel": "p=0.5 · re-embeds posterior", "tag": "zero-init bit-exact", "pos": [540, 145], "size": [180, 64] },
+    { "id": "transformer-core", "type": "backend", "label": "Block-AR Backbone", "sublabel": "24L · GQA 16Q/4KV · d=1024", "tag": "343.5M params", "pos": [540, 350], "size": [180, 64] },
+    { "id": "loss-head", "type": "backend", "label": "Chunked x₀-CE Loss", "sublabel": "fp32 logsumexp · 8K chunks", "tag": "avoids 6.6GB logits", "pos": [810, 350], "size": [180, 64] },
+    { "id": "adamw-opt", "type": "backend", "label": "AdamW + Fault Guard", "sublabel": "lr 3e-4 · warmup + cosine", "tag": "5-fault rollback", "pos": [1080, 350], "size": [170, 64] },
+    { "id": "sampler-engine", "type": "backend", "label": "Block-AR Sampler", "sublabel": "unchanged-or-stronger commit", "tag": "adaptive entropy stop", "pos": [810, 555], "size": [180, 64] },
+    { "id": "kv-cache", "type": "database", "label": "Canvas KV Cache", "sublabel": "all-ones decode re-encode", "tag": "+256 tokens / step", "pos": [1080, 555], "size": [170, 64] }
+  ],
+  "connections": [
+    { "from": "data-source", "to": "noise-process", "label": "x₀ windows", "variant": "emphasis" },
+    { "from": "time-embed", "to": "noise-process", "label": "time step", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v" },
+    { "from": "noise-process", "to": "transformer-core", "label": "corrupted xₜ", "variant": "emphasis" },
+    { "from": "self-cond", "to": "transformer-core", "label": "sc pre-pass", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v" },
+    { "from": "block-mask", "to": "transformer-core", "label": "attention mask", "fromSide": "right", "toSide": "bottom" },
+    { "from": "transformer-core", "to": "loss-head", "label": "denoised h", "variant": "emphasis" },
+    { "from": "loss-head", "to": "adamw-opt", "label": "gradients", "variant": "emphasis" },
+    { "from": "transformer-core", "to": "sampler-engine", "label": "x̂₀ posterior", "variant": "dashed" },
+    { "from": "sampler-engine", "to": "kv-cache", "label": "append block", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Training & Optimization",
+      "items": [
+        "Streams flat 4096-token windows across 50M-token binary shards with zero AR +1 offset.",
+        "Uniform corruption replaces tokens with random vocabulary entries via cosine schedule ᾱ(t) = cos²(π/2·t/T).",
+        "Chunked x₀ cross-entropy evaluates fp32 logsumexp per chunk, avoiding full (B,T,V) logits (~6.6 GB down to ~4.4 GB)."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Architecture & Inference",
+      "items": [
+        "Attention is causal across canvases and bidirectional within, accelerated by FlexAttention.",
+        "Sampler begins from uniform noise; positions commit under unchanged-or-stronger rule without overwriting.",
+        "Committed canvases are re-encoded under an all-ones decode mask and appended to the KV cache with adaptive stopping."
+      ]
+    }
+  ]
+}
