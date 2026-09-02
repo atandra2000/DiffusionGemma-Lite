@@ -12,14 +12,14 @@ cited. Line-number citations are rejected — they rot.
 |---|---|---|---|
 | 1 | [`../DIFFUSION.md`](../DIFFUSION.md) | 464 | **start here** — the authoritative engineer's contract (all math + semantics + rulings) |
 | 2 | [`concepts/foundations.md`](concepts/foundations.md) | 1,074 | the from-scratch textbook chapter: AR → diffusion → D3PM → every primitive derived, worked forward pass, param accounting |
-| 3 | [`concepts/diffusion-core.md`](concepts/diffusion-core.md) | 324 | forward process, cosine schedule, x0-parameterization, chunked-CE |
-| 4 | [`concepts/block-causal-attention.md`](concepts/block-causal-attention.md) | 302 | mask derivation, GQA + RoPE at production dims, three attention paths, KV chaining |
-| 5 | [`concepts/self-conditioning.md`](concepts/self-conditioning.md) | 211 | zero-init equivalence, detached pre-pass, cross-step eval conditioning |
-| 6 | [`concepts/sampler.md`](concepts/sampler.md) | 297 | decode loop, commit rule, temperature annealing, entropy bond, FLOP accounting |
-| 7 | [`concepts/memory-engineering.md`](concepts/memory-engineering.md) | 219 | the byte budget, chunked-CE memory argument, VRAM-for-MFU trade |
-| 8 | [`concepts/data-pipeline.md`](concepts/data-pipeline.md) | 204 | shard/window contract, no-+1-shift rationale, resumable shuffler |
-| 9 | [`training.md`](training.md) | 234 | the training loop, determinism recipe, NaN guard, checkpointing, A100 run |
-| 10 | [`inference.md`](inference.md) | 183 | eval harness, headline metric, honest gaps |
+| 3 | [`concepts/diffusion-core.md`](concepts/diffusion-core.md) | 719 | forward process, cosine schedule, x0-parameterization, chunked-CE |
+| 4 | [`concepts/block-causal-attention.md`](concepts/block-causal-attention.md) | 720 | mask derivation, GQA + RoPE at production dims, three attention paths, KV chaining |
+| 5 | [`concepts/self-conditioning.md`](concepts/self-conditioning.md) | 525 | zero-init equivalence, detached pre-pass, cross-step eval conditioning |
+| 6 | [`concepts/sampler.md`](concepts/sampler.md) | 711 | decode loop, commit rule, temperature annealing, entropy bond, FLOP accounting |
+| 7 | [`concepts/memory-engineering.md`](concepts/memory-engineering.md) | 644 | the byte budget, chunked-CE memory argument, VRAM-for-MFU trade |
+| 8 | [`concepts/data-pipeline.md`](concepts/data-pipeline.md) | 482 | shard/window contract, no-+1-shift rationale, resumable shuffler |
+| 9 | [`training.md`](training.md) | 523 | the training loop, determinism recipe, NaN guard, checkpointing, A100 run |
+| 10 | [`inference.md`](inference.md) | 469 | eval harness, headline metric, honest gaps |
 | 11 | [`references/R1_config.md`](references/R1_config.md) | 120 | every model/runtime/sampler knob |
 | 12 | [`references/R2_transformer_api.md`](references/R2_transformer_api.md) | 80 | `models/transformer.py` API |
 | 13 | [`references/R3_mask_attention_api.md`](references/R3_mask_attention_api.md) | 85 | mask + attention + block + time-embed APIs |
