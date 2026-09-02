@@ -65,5 +65,3 @@ docs_html/
 .superpowers/
 .docs-authoring/
 
-# Regenerable diagram build artifacts (visual-check HTML/PNG/JSON)
-docs/diagrams/
