@@ -127,7 +127,7 @@ print(m.generate(torch.randint(0, 50257, (1, 64)), max_new_tokens=1024).shape)
 ```
 
 ```bash
-python3 -m pytest -m "not gpu and not slow"   # CPU-friendly suite (71 tests)
+python3 -m pytest -m "not gpu and not slow"   # CPU-friendly suite (77 tests)
 python scripts/check_docs.py --coverage        # doc↔code anchor gate
 ```
 
@@ -142,8 +142,8 @@ python scripts/check_docs.py --coverage        # doc↔code anchor gate
 | `docs/concepts/foundations.md` | the from-scratch textbook chapter (AR → diffusion → primitives → worked pass) |
 | `docs/concepts/` | diffusion core, block-causal attention, self-conditioning, sampler, memory engineering, data pipeline |
 | `docs/training.md` / `docs/inference.md` | pipeline walkthroughs (loop, determinism, recovery / harness, metrics, honest gaps) |
-| `docs/references/` | per-module symbol-anchored API references (R1–R7) |
-| `docs/guides/` | quickstart, debugging playbook, sampler tuning, benchmarking, checkpoint ops, contributing |
+| `docs/references/` | per-module symbol-anchored API references (R1–R7) + `references/eval-scripts.md` |
+| `docs/guides/` | quickstart, debugging playbook, sampler tuning, benchmarking, checkpoint ops, contributing, A100 runbook |
 | [`AGENTS.md`](AGENTS.md) | coding-agent contract (rules, caveats) |
 | [`SKILLS.md`](SKILLS.md) | day-to-day developer workflows |
 
@@ -153,7 +153,7 @@ python scripts/check_docs.py --coverage        # doc↔code anchor gate
 
 | item | status |
 |---|---|
-| Diffusion core, sampler, training loop, eval harness | ✅ implemented, 71 CPU tests green |
+| Diffusion core, sampler, training loop, eval harness | ✅ implemented, 77 CPU tests green |
 | Chunked-CE ≡ eager CE at production vocab | ✅ measured: max abs diff **0.0**, grads ≤ 1.7e-7 |
 | 100-step smoke descent + resume bit-equality | ✅ measured on CPU |
 | **8.0B-token A100 training run** | ❌ not started (Task 15 scripts ready for the pod) |

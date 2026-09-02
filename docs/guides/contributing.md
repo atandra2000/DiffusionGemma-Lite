@@ -48,7 +48,7 @@ checks (`SKILLS.md` documents the recipes).
 ## Tests and gates
 
 ```bash
-uv run --python 3.13 python -m pytest -m "not gpu and not slow"   # 71 tests
+uv run --python 3.13 python -m pytest -m "not gpu and not slow"   # 77 tests
 python3 scripts/check_docs.py --coverage --links
 python3 scripts/build_docs_html.py
 ```
