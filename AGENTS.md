@@ -9,9 +9,8 @@
 ```bash
 cd LLM/DiffusionGemma-Lite
 python3 -m pytest -m "not gpu and not slow"   # CPU-friendly suite
-python3 scripts/check_docs.py --coverage      # doc↔code symbol anchors
-# GPU gates (CUDA required, A100 pod; scripts land with Task 15):
-#   python scripts/e2e_gpu_smoke.py ; python scripts/step_time_a100.py
+# GPU gates (CUDA required, A100 pod):
+#   python scripts/microbench_a100.py ; python scripts/step_time_a100.py ; python scripts/e2e_gpu_smoke.py
 ```
 
 > **Project:** `LLM/DiffusionGemma-Lite/` · **Type:** block-AR discrete

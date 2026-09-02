@@ -33,6 +33,8 @@ cited. Line-number citations are rejected — they rot.
 | 21 | [`guides/benchmarking.md`](guides/benchmarking.md) | 57 | honest speedup/VRAM/MFU discipline |
 | 22 | [`guides/checkpoint-ops.md`](guides/checkpoint-ops.md) | 53 | checkpoint layout, resume recipes, disk hygiene |
 | 23 | [`guides/contributing.md`](guides/contributing.md) | 57 | the doc contract + gates for new code |
+| 24 | [`guides/a100-runbook.md`](guides/a100-runbook.md) | 75 | A100 pod operational sequence, boundary checks, resume |
+| 25 | [`references/eval-scripts.md`](references/eval-scripts.md) | 120 | B1–B6 gates, flags, CPU vs A100 forms, PASS/DISCLOSED semantics |
 
 Every concept doc carries its own glossary, "what breaks if you change this"
 table, and embedded interview Q&A. First read for the foundations:
