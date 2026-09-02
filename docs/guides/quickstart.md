@@ -7,10 +7,10 @@ repo root (`LLM/DiffusionGemma-Lite/`) and Python ≥ 3.10 with
 ## 0. Environment check
 
 ```bash
-uv run --python 3.13 python -m pytest -m "not gpu and not slow"    # 71 tests, CPU-only
+uv run --python 3.13 python -m pytest -m "not gpu and not slow"    # 77 tests, CPU-only
 ```
 
-Expected: `71 passed` (plus 2 warnings). On this box bare `python3` is 3.9
+Expected: `77 passed` (plus 2 warnings). On this box bare `python3` is 3.9
 and fails collection (PEP-604) — use the `uv run --python 3.13` form (see
 `SKILLS.md`). Training needs CUDA (A100 80GB for the production config);
 everything else runs on CPU.
