@@ -1,0 +1,262 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DiffusionGemma-Lite Sampler & Block-AR Generation",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "sampling-loop",
+        "label": "Sampling Loop",
+        "focus": ["noise_init", "mask_gen", "backbone", "posterior", "anneal", "entropy_check"],
+        "note": "Iterative reverse diffusion loop: uniform noise initialization, backbone forward pass, and monotonic token commit."
+      },
+      {
+        "id": "kv-chaining",
+        "label": "KV Chaining",
+        "focus": ["prompt", "kv_cache", "reencode", "append_kv"],
+        "note": "Canvas-by-canvas KV cache chaining: finalized canvases are re-encoded under an all-ones mask."
+      },
+      {
+        "id": "adaptive-stopping",
+        "label": "Adaptive Stopping",
+        "focus": ["posterior", "entropy_check", "early_exit", "reencode"],
+        "note": "Adaptive entropy exit: halts reverse iterations early once average posterior entropy drops below threshold."
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "init",
+      "label": "Context & KV Cache"
+    },
+    {
+      "id": "denoise",
+      "label": "Block Diffusion Denoising (T..1)"
+    },
+    {
+      "id": "finalize",
+      "label": "Canvas Finalization & Chain",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "prompt",
+    "kv_cache",
+    "mask_gen",
+    "backbone",
+    "posterior",
+    "anneal",
+    "entropy_check",
+    "reencode",
+    "append_kv"
+  ],
+  "nodes": [
+    {
+      "id": "prompt",
+      "lane": "init",
+      "col": 0,
+      "type": "external",
+      "label": "Prompt Prefix",
+      "sublabel": "context tokens",
+      "width": 120,
+      "height": 48
+    },
+    {
+      "id": "kv_cache",
+      "lane": "init",
+      "col": 1,
+      "type": "database",
+      "label": "Prior KV Cache",
+      "sublabel": "cached canvas blocks",
+      "width": 130,
+      "height": 48
+    },
+    {
+      "id": "mask_gen",
+      "lane": "init",
+      "col": 2,
+      "type": "security",
+      "label": "Decode Mask",
+      "sublabel": "causal prior · bi active",
+      "width": 130,
+      "height": 48
+    },
+    {
+      "id": "append_kv",
+      "lane": "init",
+      "col": 5,
+      "type": "database",
+      "label": "Append KV Cache",
+      "sublabel": "chain next canvas",
+      "width": 130,
+      "height": 48
+    },
+    {
+      "id": "noise_init",
+      "lane": "denoise",
+      "col": 1,
+      "type": "external",
+      "label": "Uniform Noise xT",
+      "sublabel": "256 tokens · pure noise",
+      "width": 130,
+      "height": 48
+    },
+    {
+      "id": "backbone",
+      "lane": "denoise",
+      "col": 2,
+      "type": "backend",
+      "label": "Transformer Fwd",
+      "sublabel": "24L · GQA 16/4 · d=1024",
+      "width": 130,
+      "height": 48
+    },
+    {
+      "id": "posterior",
+      "lane": "denoise",
+      "col": 3,
+      "type": "backend",
+      "label": "x̂0 Posterior",
+      "sublabel": "logits over 50,257 IDs",
+      "width": 125,
+      "height": 48
+    },
+    {
+      "id": "anneal",
+      "lane": "denoise",
+      "col": 4,
+      "type": "backend",
+      "label": "Anneal & Commit",
+      "sublabel": "τ(t) · monotonic commit",
+      "width": 135,
+      "height": 48
+    },
+    {
+      "id": "entropy_check",
+      "lane": "denoise",
+      "col": 5,
+      "type": "backend",
+      "label": "Entropy Check",
+      "sublabel": "H(x̂0) ≤ threshold",
+      "width": 125,
+      "height": 48
+    },
+    {
+      "id": "early_exit",
+      "lane": "finalize",
+      "col": 4,
+      "type": "security",
+      "label": "Early Exit",
+      "sublabel": "adaptive step stop",
+      "width": 125,
+      "height": 48
+    },
+    {
+      "id": "reencode",
+      "lane": "finalize",
+      "col": 5,
+      "type": "backend",
+      "label": "All-Ones Pass",
+      "sublabel": "re-encode final tokens",
+      "width": 125,
+      "height": 48
+    }
+  ],
+  "edges": [
+    {
+      "id": "prompt-kv",
+      "from": "prompt",
+      "to": "kv_cache",
+      "label": "prefix KV",
+      "variant": "emphasis"
+    },
+    {
+      "id": "kv-mask",
+      "from": "kv_cache",
+      "to": "mask_gen"
+    },
+    {
+      "id": "mask-backbone",
+      "from": "mask_gen",
+      "to": "backbone",
+      "label": "block mask"
+    },
+    {
+      "id": "noise-backbone",
+      "from": "noise_init",
+      "to": "backbone",
+      "label": "noisy xt",
+      "variant": "emphasis"
+    },
+    {
+      "id": "backbone-posterior",
+      "from": "backbone",
+      "to": "posterior",
+      "label": "hidden h",
+      "variant": "emphasis"
+    },
+    {
+      "id": "posterior-anneal",
+      "from": "posterior",
+      "to": "anneal",
+      "label": "temp τ",
+      "variant": "emphasis"
+    },
+    {
+      "id": "anneal-entropy",
+      "from": "anneal",
+      "to": "entropy_check",
+      "label": "committed xt",
+      "variant": "emphasis"
+    },
+    {
+      "id": "entropy-reencode",
+      "from": "entropy_check",
+      "to": "reencode",
+      "label": "t=0 done",
+      "variant": "emphasis"
+    },
+    {
+      "id": "entropy-exit",
+      "from": "entropy_check",
+      "to": "early_exit",
+      "label": "H ≤ ε",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "exit-reencode",
+      "from": "early_exit",
+      "to": "reencode",
+      "variant": "security",
+      "role": "return"
+    },
+    {
+      "id": "reencode-append",
+      "from": "reencode",
+      "to": "append_kv",
+      "label": "final KV",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Block Diffusion Generation",
+      "items": [
+        "Generation advances in 256-token canvas blocks; each canvas begins from uniform random vocabulary noise (never q_sample).",
+        "Tokens are denoised over T discrete reverse diffusion steps with temperature annealing τ(t) = τ0 · (t/T).",
+        "Committed tokens follow an unchanged-or-stronger rule: positions retain decisions unless confidence strictly increases."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Adaptive Stopping & Cache Chaining",
+      "items": [
+        "Adaptive stopping monitors posterior entropy across uncommitted tokens, halting step iterations when confidence saturates.",
+        "Finalized canvas tokens undergo an all-ones causal re-encode pass to populate KV cache entries for downstream blocks."
+      ]
+    }
+  ]
+}

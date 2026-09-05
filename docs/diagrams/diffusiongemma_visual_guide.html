@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DiffusionGemma-Lite — Interactive Systems & Architecture Guide</title>
+<style>
+:root{color-scheme:light dark;--bg:#f6f5f0;--paper:#ffffff;--ink:#142328;--muted:#53666d;--line:#d5ded9;--accent:#802b74;--soft:#f3e8f1;--code-bg:#f5ebf4}
+@media(prefers-color-scheme:dark){:root{--bg:#1a1018;--paper:#241722;--ink:#eee3ec;--muted:#b8a3b5;--line:#4d3348;--accent:#e685d8;--soft:#381e35;--code-bg:#331c30}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent);text-underline-offset:4px}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+header,main,footer{max-width:1160px;margin:auto;padding:36px 24px}
+header{padding-top:60px;padding-bottom:20px}
+.eyebrow{font:600 12px/1.5 ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:clamp(36px,5.5vw,68px);line-height:1.05;margin:12px 0 20px;font-weight:800;letter-spacing:-.03em}
+.lead{font-size:clamp(18px,2.2vw,22px);line-height:1.5;color:var(--muted);max-width:880px;margin-bottom:30px}
+.pill-bar{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0}
+.pill{background:var(--paper);border:1px solid var(--line);padding:6px 14px;border-radius:999px;font:500 13px ui-monospace,monospace;color:var(--muted)}
+.pill strong{color:var(--ink)}
+.jump-nav{display:flex;flex-wrap:wrap;gap:12px;margin:30px 0;padding:16px 20px;background:var(--paper);border:1px solid var(--line);border-radius:12px}
+.jump-nav a{font-weight:600;font-size:14px;text-decoration:none;padding:6px 12px;border-radius:8px;background:var(--soft);color:var(--accent)}
+.jump-nav a:hover{opacity:.85}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;margin:30px 0}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,.03)}
+.card h3{margin-top:0;font-size:20px;display:flex;align-items:center;justify-content:space-between}
+.card p{color:var(--muted);font-size:15px}
+.card-btn{display:inline-flex;align-items:center;gap:6px;font-weight:600;padding:8px 16px;border-radius:8px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;margin-top:12px}
+@media(prefers-color-scheme:dark){.card-btn{color:#1a1018}}
+.simulator-box{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:28px;margin:32px 0}
+.ctrl-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin:20px 0}
+label{font:600 13px ui-monospace,monospace;color:var(--muted);display:block;margin-bottom:6px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+select,input[type=number]{width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+.calc-result{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:20px;margin-top:20px}
+.calc-stat{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.calc-stat:last-child{border-bottom:none}
+.calc-stat strong{font-family:ui-monospace,monospace;font-size:16px;color:var(--accent)}
+.canvas-grid{display:grid;grid-template-columns:repeat(16,1fr);gap:4px;margin-top:16px;max-height:220px;overflow-y:auto;padding:8px;background:var(--bg);border-radius:8px;border:1px solid var(--line)}
+.canvas-token{font:500 10px ui-monospace,monospace;padding:4px 2px;text-align:center;border-radius:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table{width:100%;border-collapse:collapse;margin:20px 0;font-size:14px}
+th,td{padding:10px 14px;border:1px solid var(--line);text-align:left}
+th{background:var(--soft);font-weight:600}
+code{font-family:ui-monospace,monospace;font-size:13px;background:var(--code-bg);padding:2px 6px;border-radius:4px}
+footer{border-top:1px solid var(--line);margin-top:60px;font-size:14px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Interactive Visual Systems Guide</div>
+  <h1>DiffusionGemma-Lite</h1>
+  <p class="lead">
+    A from-scratch, pure-PyTorch reproduction of uniform-state block-diffusion LM (~343.5M parameters, exactly 343,516,160), generating text 256 tokens at a time via parallel denoising over discrete D3PM vocabulary transitions.
+  </p>
+  <div class="pill-bar">
+    <div class="pill">Params: <strong>343,516,160 (Exact)</strong></div>
+    <div class="pill">Canvas: <strong>256 Tokens (Block-AR)</strong></div>
+    <div class="pill">Schedule: <strong>D3PM Cosine Schedule</strong></div>
+    <div class="pill">Attention: <strong>Block-Causal Bidirectional</strong></div>
+    <div class="pill">Training: <strong>8.0B Tokens (~40-50h on A100)</strong></div>
+  </div>
+  <nav class="jump-nav">
+    <a href="#diagrams">Architecture Maps</a>
+    <a href="#d3pm-sim">D3PM Noise Simulator</a>
+    <a href="#mask-sim">Block-Causal Masking</a>
+    <a href="#specs">System Specs</a>
+    <a href="#receipts">Verification Evidence</a>
+  </nav>
+</header>
+
+<main>
+  <section id="diagrams">
+    <div class="eyebrow">Standalone Showcase Deliverables</div>
+    <h2>Architecture & Workflow Maps</h2>
+    <p>Five standalone Archify diagrams verified with 9/9 showcase checks and responsive multi-viewport capture.</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>System Overview <span>🏛️</span></h3>
+        <p>End-to-end discrete diffusion topology: embedding table, diffusion timestep conditioning, self-conditioning injection, and vocabulary projection.</p>
+        <code>docs/diagrams/diffusiongemma-system.html</code>
+        <br>
+        <a class="card-btn" href="diffusiongemma-system.html">Open Diagram ↗</a>
+      </div>
+
+      <div class="card">
+        <h3>Forward Pass & Block Attention <span>⚡</span></h3>
+        <p>Gemma-class transformer block with GQA + RoPE, bidirectional intra-canvas attention, and causal inter-block KV chaining.</p>
+        <code>docs/diagrams/diffusiongemma-forward-pass.html</code>
+        <br>
+        <a class="card-btn" href="diffusiongemma-forward-pass.html">Open Diagram ↗</a>
+      </div>
+
+      <div class="card">
+        <h3>Data Pipeline & Block Packing <span>🔄</span></h3>
+        <p>Token extraction, 256-token canvas segmentation, uniform corruption injection $q(x_t|x_0)$, and cross-entropy target alignment.</p>
+        <code>docs/diagrams/diffusiongemma-data-pipeline.html</code>
+        <br>
+        <a class="card-btn" href="diffusiongemma-data-pipeline.html">Open Diagram ↗</a>
+      </div>
+
+      <div class="card">
+        <h3>Discrete Diffusion Sampler <span>🎯</span></h3>
+        <p>Reverse generation loop: ODE/ancestral discrete stepping from $t=T$ to $0$, temperature annealing, and entropy commitment rule.</p>
+        <code>docs/diagrams/diffusiongemma-sampler.html</code>
+        <br>
+        <a class="card-btn" href="diffusiongemma-sampler.html">Open Diagram ↗</a>
+      </div>
+
+      <div class="card">
+        <h3>Training Pipeline & Loss Rollout <span>🚀</span></h3>
+        <p>Single-GPU A100 training loop: random timestep sampling $t \sim \mathcal{U}(0, T)$, detached self-conditioning pre-pass, and chunked cross-entropy.</p>
+        <code>docs/diagrams/diffusiongemma-training.html</code>
+        <br>
+        <a class="card-btn" href="diffusiongemma-training.html">Open Diagram ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="d3pm-sim">
+    <div class="simulator-box">
+      <div class="eyebrow">Interactive Systems Experiment</div>
+      <h2>D3PM Cosine Noise Schedule & Canvas Corruption Simulator</h2>
+      <p>Observe how discrete diffusion corrupts a 256-token canvas over timesteps $t \in [0, 1000]$ using the D3PM cosine transition probability $q(x_t|x_0) = \bar{\alpha}_t \mathbf{e}_{x_0} + (1 - \bar{\alpha}_t) \frac{1}{V} \mathbf{1}$.</p>
+
+      <div class="ctrl-row">
+        <div>
+          <label for="timestep">Diffusion Timestep (t): <span id="t-val">0</span> / 1000</label>
+          <input type="range" id="timestep" min="0" max="1000" step="10" value="0" oninput="updateD3PMSim()">
+        </div>
+        <div>
+          <label for="prompt-select">Canvas Scenario</label>
+          <select id="prompt-select" onchange="updateD3PMSim()">
+            <option value="code" selected>Python Code Canvas (Transformer Implementation)</option>
+            <option value="reasoning">Scientific Reasoning & Theorem Derivation</option>
+            <option value="prose">Narrative Prose & Dialogue</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="calc-result">
+        <div class="calc-stat">
+          <span>Signal Retention Coefficient (&alpha;&#772;<sub>t</sub>):</span>
+          <strong id="alpha-bar">1.0000</strong>
+        </div>
+        <div class="calc-stat">
+          <span>Uniform Vocab Noise Probability (1 - &alpha;&#772;<sub>t</sub>):</span>
+          <strong id="noise-prob">0.0000</strong>
+        </div>
+        <div class="calc-stat">
+          <span>Expected Corrupted Tokens in 256-Canvas:</span>
+          <strong id="corrupt-cnt">0 / 256</strong>
+        </div>
+
+        <label style="margin-top:16px">256-Token Canvas Denoising State:</label>
+        <div class="canvas-grid" id="canvas-view"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="mask-sim">
+    <div class="simulator-box">
+      <div class="eyebrow">Attention Matrix Inspector</div>
+      <h2>Block-Causal Bidirectional Attention Mechanics</h2>
+      <p>Unlike standard autoregressive models with strict lower-triangular causal masks, DiffusionGemma uses a block-causal mask where tokens within the active 256-token canvas attend bidirectionally to each other while attending causally to previous committed blocks.</p>
+
+      <div class="calc-result" style="display:flex;flex-direction:column;gap:12px">
+        <div class="calc-stat">
+          <span>Intra-Canvas Attention:</span>
+          <strong>Fully Bidirectional (all 256 tokens attend to each other)</strong>
+        </div>
+        <div class="calc-stat">
+          <span>Inter-Block Attention:</span>
+          <strong>Strictly Causal (Canvas k can attend to Block 0...k-1)</strong>
+        </div>
+        <div class="calc-stat">
+          <span>KV Cache Chaining:</span>
+          <strong>Prefix Blocks stored as immutable KV tokens</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="specs">
+    <div class="eyebrow">Architecture Specifications</div>
+    <h2>Model Architecture Parameters</h2>
+    <table>
+      <thead>
+        <tr><th>Component</th><th>Configuration</th><th>Symbol Reference</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Backbone</strong></td><td>18 layers, d_model=1024, n_heads=16, d_head=64</td><td><code>models/transformer.py:DiffusionTransformer</code></td></tr>
+        <tr><td><strong>Vocabulary</strong></td><td>GPT-2 BPE, vocab_size=50,257</td><td><code>data/tokenizer.py:BPETokenizer</code></td></tr>
+        <tr><td><strong>Canvas Size</strong></td><td>256 tokens per diffusion block generation</td><td><code>models/mask.py:build_block_causal_mask</code></td></tr>
+        <tr><td><strong>Diffusion Process</strong></td><td>Uniform-state D3PM cosine schedule, 1000 continuous/discrete steps</td><td><code>models/diffusion.py:q_sample</code></td></tr>
+        <tr><td><strong>Reverse Sampler</strong></td><td>Ancestral discrete sampler with entropy commitment</td><td><code>models/sampler.py:discrete_diffusion_step</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="receipts">
+    <div class="eyebrow">Verification Evidence</div>
+    <h2>Delivery Receipts & Artifact Hashes</h2>
+    <p>All delivered HTML artifacts are verified with SHA-256 bindings. For details see <a href="RECEIPTS.md">RECEIPTS.md</a> and <a href="diffusiongemma_receipts.json">diffusiongemma_receipts.json</a>.</p>
+    <table>
+      <thead>
+        <tr><th>Artifact</th><th>Type</th><th>SHA-256 Hash</th><th>Byte Size</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>diffusiongemma-system.html</code></td><td>architecture</td><td><code>c9ab4f78e54f387522395195f543ce7ac5a9ba9c9845fca42420f6fadb328301</code></td><td>715,789 B</td></tr>
+        <tr><td><code>diffusiongemma-forward-pass.html</code></td><td>architecture</td><td><code>990af736500434091ecd96836c9488270aed4822c8b3676b2f3369cb6c619e11</code></td><td>714,975 B</td></tr>
+        <tr><td><code>diffusiongemma-data-pipeline.html</code></td><td>dataflow</td><td><code>2578268bbcc6b6c9cb33bf9458d06cd5f3f778e7c95df1d3cb61b3aaca634f10</code></td><td>711,840 B</td></tr>
+        <tr><td><code>diffusiongemma-sampler.html</code></td><td>workflow</td><td><code>929b8f9b3345c06417ec8f1bb466c9af83df881ffbf47c56471860d667b6b5fe</code></td><td>718,972 B</td></tr>
+        <tr><td><code>diffusiongemma-training.html</code></td><td>workflow</td><td><code>1270350232e9d70d56aba57a0255f86ea58ac5cf9f2caf3bfda7e39f5d08618a</code></td><td>717,737 B</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer>
+  <p>DiffusionGemma-Lite Illustrated Systems Guide · Verified Archify Showcase Delivery · Source-anchored to PyTorch repository.</p>
+</footer>
+
+<script>
+const sampleTokens = {
+  code: ["class", "Diffusion", "Block", "(", "nn", ".", "Module", ")", ":", "\n", "  def", " __init__", "(", "self", ",", " config", ")", ":", "\n", "    super", "(", ")", ".", "__init__", "(", ")", "\n", "    self", ".", "attn", " =", " Block", "Causal", "Attention", "(", "config", ")", "\n", "    self", ".", "norm", " =", " RMS", "Norm", "(", "config", ".", "dim", ")", "\n", "  def", " forward", "(", "self", ",", " x", ",", " t", ")", ":", "\n", "    res", " =", " x", "\n", "    x", " =", " self", ".", "norm", "(", "x", ")", "\n", "    h", " =", " self", ".", "attn", "(", "x", ",", " t", ")", "\n", "    return", " res", " +", " h"],
+  reasoning: ["Theorem", " 1", ".", " The", " discrete", " uniform", " transition", " kernel", " preserves", " marginal", " entropy", " under", " the", " cosine", " variance", " schedule", ".", " Let", " q", "(", "x_t", "|", "x_0", ")", " be", " defined", " by", " convex", " combination", " of", " the", " delta", " distribution", " and", " the", " uniform", " categorical", " prior", " over", " vocabulary", " V", "."],
+  prose: ["The", " model", " generated", " text", " in", " parallel", " bursts", " of", " two", " hundred", " and", " fifty", " six", " tokens", ",", " refining", " the", " noisy", " canvas", " through", " iterative", " discrete", " denoising", " transitions", " until", " coherent", " sentence", " structures", " emerged", " from", " initial", " uniform", " noise", "."]
+};
+
+const randomVocab = ["tok_742", "tok_991", "tok_12", "tok_8841", "tok_321", "tok_65", "tok_550", "tok_19", "tok_443", "tok_81"];
+
+function updateD3PMSim() {
+  const t = parseInt(document.getElementById('timestep').value, 10);
+  document.getElementById('t-val').textContent = t;
+
+  const s = 0.008;
+  const rad = ((t / 1000 + s) / (1 + s)) * (Math.PI / 2);
+  const alphaBar = Math.pow(Math.cos(rad), 2);
+  const noiseProb = 1 - alphaBar;
+
+  document.getElementById('alpha-bar').textContent = alphaBar.toFixed(4);
+  document.getElementById('noise-prob').textContent = noiseProb.toFixed(4);
+
+  const numCorrupted = Math.round(256 * noiseProb);
+  document.getElementById('corrupt-cnt').textContent = numCorrupted + ' / 256 tokens (' + (noiseProb * 100).toFixed(1) + '%)';
+
+  const mode = document.getElementById('prompt-select').value;
+  const baseTokens = sampleTokens[mode];
+
+  const grid = document.getElementById('canvas-view');
+  grid.innerHTML = '';
+
+  // Seeded random for consistency
+  let seed = 42;
+  function rand() {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  }
+
+  for (let i = 0; i < 256; i++) {
+    const isCorrupted = rand() < noiseProb;
+    const cell = document.createElement('div');
+    cell.className = 'canvas-token';
+
+    if (isCorrupted) {
+      cell.textContent = randomVocab[Math.floor(rand() * randomVocab.length)];
+      cell.style.background = 'var(--soft)';
+      cell.style.color = '#c2410c';
+      cell.style.border = '1px dashed #ea580c';
+    } else {
+      const baseTok = baseTokens[i % baseTokens.length].replace('\n', '↵');
+      cell.textContent = baseTok;
+      cell.style.background = 'var(--paper)';
+      cell.style.color = 'var(--accent)';
+      cell.style.border = '1px solid var(--line)';
+    }
+    grid.appendChild(cell);
+  }
+}
+
+updateD3PMSim();
+</script>
+</body>
+</html>

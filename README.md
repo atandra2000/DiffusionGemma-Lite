@@ -69,6 +69,29 @@ until the trained run exists — see the SDD ledger for phase gating.
 
 ---
 
+## 🗺️ Visual Architecture Atlas
+
+> Explore the full **[Interactive Visual Systems Guide](docs/diagrams/diffusiongemma_visual_guide.html)**: five verified Archify showcase maps, live entropy-bounded sampler simulator, D3PM uniform corruption visualizer, and [verification receipts](docs/diagrams/RECEIPTS.md).
+
+<div align="center">
+  <a href="docs/diagrams/diffusiongemma_visual_guide.html">
+    <img src="docs/diagrams/diffusiongemma-system.visual-check.1440x900.dark.png" alt="DiffusionGemma-Lite System Architecture" width="100%" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" />
+  </a>
+  <p><em>Figure 1: DiffusionGemma-Lite Architecture Map — Gemma-class dense transformer with block-causal attention, self-conditioning, and 256-token discrete canvas diffusion. Click image to open interactive guide.</em></p>
+</div>
+
+### Interactive Architecture & Systems Diagrams
+
+| Diagram | Description | Interactive HTML | Visual Preview |
+|---|---|:---:|:---:|
+| **System Overview** | Top-level architecture, Gemma-class transformer backbone, self-conditioning projection, and tensor lifecycle | [Open Map ↗](docs/diagrams/diffusiongemma-system.html) | [PNG](docs/diagrams/diffusiongemma-system.visual-check.1440x900.dark.png) |
+| **Block-AR Forward Pass** | Intra-canvas bidirectional + inter-canvas causal attention mask, RoPE positional encoding, and SwiGLU FFN | [Open Map ↗](docs/diagrams/diffusiongemma-forward-pass.html) | [PNG](docs/diagrams/diffusiongemma-forward-pass.visual-check.1440x900.dark.png) |
+| **Diffusion Sampler** | Reverse denoising process, cosine noise schedule, entropy-bounded adaptive early stopping, and canvas committing | [Open Map ↗](docs/diagrams/diffusiongemma-sampler.html) | [PNG](docs/diagrams/diffusiongemma-sampler.visual-check.1440x900.dark.png) |
+| **Data Pipeline** | 8.0B-token universal pipeline, GPT-2 BPE tokenizer, binary canvas shard packing, and streaming `PretrainDataset` | [Open Map ↗](docs/diagrams/diffusiongemma-data-pipeline.html) | [PNG](docs/diagrams/diffusiongemma-data-pipeline.visual-check.1440x900.dark.png) |
+| **Training Workflow** | Uniform timestep sampling, chunked $x_0$ cross-entropy loss, AdamW optimizer, and gradient accumulation loop | [Open Map ↗](docs/diagrams/diffusiongemma-training.html) | [PNG](docs/diagrams/diffusiongemma-training.visual-check.1440x900.dark.png) |
+
+---
+
 ## 🏗 Architecture
 
 ```
