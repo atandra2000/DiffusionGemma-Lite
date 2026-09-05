@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "scope": "DiffusionGemma-Lite Archify visual documentation suite",
+  "diagrams": [
+    {
+      "type": "architecture",
+      "output": "diffusiongemma-system.html",
+      "specification": {
+        "sha256": "c8ebb37a77b473eb1e056c9356fe327f13aa4679acd8d2e33677242942db4ec7",
+        "bytes": 4104
+      },
+      "artifact": {
+        "sha256": "c9ab4f78e54f387522395195f543ce7ac5a9ba9c9845fca42420f6fadb328301",
+        "bytes": 715789
+      },
+      "validation": {
+        "checksPassed": 9,
+        "checkCount": 9,
+        "compositionProfile": "showcase",
+        "compositionStatus": "pass",
+        "errors": 0,
+        "warnings": 0
+      },
+      "browser_evidence": "passed",
+      "browser_receipt": "diffusiongemma-system.visual-check.json",
+      "visual_review": "passed",
+      "visual_review_scope": "Default READ/still screenshots at 1440x900 and 2048x1320, light and dark: node fit, routes, cards, layout. Export and focus panels not manually exercised."
+    },
+    {
+      "type": "architecture",
+      "output": "diffusiongemma-forward-pass.html",
+      "specification": {
+        "sha256": "4f19c6021a44bd7a6c7eb39ab5ae1d1f211253b60b27253e6a545dff1a565531",
+        "bytes": 3847
+      },
+      "artifact": {
+        "sha256": "990af736500434091ecd96836c9488270aed4822c8b3676b2f3369cb6c619e11",
+        "bytes": 714975
+      },
+      "validation": {
+        "checksPassed": 9,
+        "checkCount": 9,
+        "compositionProfile": "showcase",
+        "compositionStatus": "pass",
+        "errors": 0,
+        "warnings": 0
+      },
+      "browser_evidence": "passed",
+      "browser_receipt": "diffusiongemma-forward-pass.visual-check.json",
+      "visual_review": "passed",
+      "visual_review_scope": "Default READ/still screenshots at 1440x900 and 2048x1320, light and dark: node fit, routes, cards, layout. Export and focus panels not manually exercised."
+    },
+    {
+      "type": "workflow",
+      "output": "diffusiongemma-training.html",
+      "specification": {
+        "sha256": "3836e1b573c073e1937ae4377ec49e35358c4dba8a9b953895c9d9473b4024a3",
+        "bytes": 6295
+      },
+      "artifact": {
+        "sha256": "1270350232e9d70d56aba57a0255f86ea58ac5cf9f2caf3bfda7e39f5d08618a",
+        "bytes": 717737
+      },
+      "validation": {
+        "checksPassed": 9,
+        "checkCount": 9,
+        "compositionProfile": "showcase",
+        "compositionStatus": "pass",
+        "errors": 0,
+        "warnings": 0
+      },
+      "browser_evidence": "passed",
+      "browser_receipt": "diffusiongemma-training.visual-check.json",
+      "visual_review": "passed",
+      "visual_review_scope": "Default READ/still screenshots at 1440x900 and 2048x1320, light and dark: node fit, routes, cards, layout. Export and focus panels not manually exercised."
+    },
+    {
+      "type": "dataflow",
+      "output": "diffusiongemma-data-pipeline.html",
+      "specification": {
+        "sha256": "08e0351c7bb08336fc5e09fe0cc9a7e5e173a251e0d340ce58f28ca7eca5d8f8",
+        "bytes": 4692
+      },
+      "artifact": {
+        "sha256": "2578268bbcc6b6c9cb33bf9458d06cd5f3f778e7c95df1d3cb61b3aaca634f10",
+        "bytes": 711840
+      },
+      "validation": {
+        "checksPassed": 9,
+        "checkCount": 9,
+        "compositionProfile": "showcase",
+        "compositionStatus": "pass",
+        "errors": 0,
+        "warnings": 0
+      },
+      "browser_evidence": "passed",
+      "browser_receipt": "diffusiongemma-data-pipeline.visual-check.json",
+      "visual_review": "passed",
+      "visual_review_scope": "Default READ/still screenshots at 1440x900 and 2048x1320, light and dark: node fit, routes, cards, layout. Export and focus panels not manually exercised."
+    },
+    {
+      "type": "workflow",
+      "output": "diffusiongemma-sampler.html",
+      "specification": {
+        "sha256": "f4ae84291bdd2e6cac9262e010431aee486e3a0c5bb04bc99cd4f1bfc3a66b3c",
+        "bytes": 6397
+      },
+      "artifact": {
+        "sha256": "929b8f9b3345c06417ec8f1bb466c9af83df881ffbf47c56471860d667b6b5fe",
+        "bytes": 718972
+      },
+      "validation": {
+        "checksPassed": 9,
+        "checkCount": 9,
+        "compositionProfile": "showcase",
+        "compositionStatus": "pass",
+        "errors": 0,
+        "warnings": 0
+      },
+      "browser_evidence": "passed",
+      "browser_receipt": "diffusiongemma-sampler.visual-check.json",
+      "visual_review": "passed",
+      "visual_review_scope": "Default READ/still screenshots at 1440x900 and 2048x1320, light and dark: node fit, routes, cards, layout. Export and focus panels not manually exercised."
+    }
+  ]
+}

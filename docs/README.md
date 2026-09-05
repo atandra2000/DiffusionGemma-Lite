@@ -6,6 +6,10 @@ fails on any anchor that stops resolving, and `--coverage` fails if a public
 symbol in `models/`, `training/`, `data/`, `inference/`, `utils/` is never
 cited. Line-number citations are rejected — they rot.
 
+## Visual systems atlas
+
+Explore the [Interactive Visual Systems Guide](diagrams/diffusiongemma_visual_guide.html): five verified Archify showcase maps ([System Overview](diagrams/diffusiongemma-system.html), [Forward Pass & Block Attention](diagrams/diffusiongemma-forward-pass.html), [Data Pipeline](diagrams/diffusiongemma-data-pipeline.html), [Discrete Sampler](diagrams/diffusiongemma-sampler.html), [Training Pipeline](diagrams/diffusiongemma-training.html)), interactive D3PM cosine noise simulator, block-causal mask inspector, and [verification receipts](diagrams/RECEIPTS.md).
+
 ## Reading order
 
 | # | doc | lines | read when |

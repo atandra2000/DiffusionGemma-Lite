@@ -1,0 +1,266 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DiffusionGemma-Lite Training Pipeline & Recovery",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "training-loop",
+        "label": "Training Loop",
+        "focus": ["yaml", "init", "loader", "noise", "sc_pre", "loss_head", "bwd_clip", "adamw"],
+        "note": "Main training path: flat shard loading, cosine corruption, detached self-conditioning, and chunked x0-CE."
+      },
+      {
+        "id": "self-conditioning",
+        "label": "Self-Conditioning",
+        "focus": ["noise", "sc_pre", "loss_head"],
+        "note": "Pre-pass with p=0.5 generates detached posterior estimate x̂0 to condition second forward pass."
+      },
+      {
+        "id": "fault-recovery",
+        "label": "Fault Recovery",
+        "focus": ["loss_head", "loss_guard", "rollback", "ckpt"],
+        "note": "Non-finite loss triggers health guard; 5 consecutive failures roll back to last atomic checkpoint."
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "setup",
+      "label": "Setup & Optimization"
+    },
+    {
+      "id": "step",
+      "label": "Micro-Step Loop (×2 accum)"
+    },
+    {
+      "id": "guard",
+      "label": "Fault Recovery & Storage",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "yaml",
+    "init",
+    "loader",
+    "noise",
+    "sc_pre",
+    "loss_head",
+    "bwd_clip",
+    "adamw"
+  ],
+  "nodes": [
+    {
+      "id": "yaml",
+      "lane": "setup",
+      "col": 0,
+      "type": "external",
+      "label": "pretrain YAML",
+      "sublabel": "a100_380m config",
+      "width": 120,
+      "height": 48
+    },
+    {
+      "id": "init",
+      "lane": "setup",
+      "col": 1,
+      "type": "backend",
+      "label": "Trainer Init",
+      "sublabel": "Gemma2 + AdamW + Cosine",
+      "width": 130,
+      "height": 48
+    },
+    {
+      "id": "eval_pass",
+      "lane": "setup",
+      "col": 4,
+      "type": "backend",
+      "label": "Held-out NLL",
+      "sublabel": "x0-CE on val shards",
+      "width": 120,
+      "height": 48
+    },
+    {
+      "id": "adamw",
+      "lane": "setup",
+      "col": 5,
+      "type": "backend",
+      "label": "AdamW Step",
+      "sublabel": "lr 3e-4 · β (0.9, 0.95)",
+      "width": 120,
+      "height": 48
+    },
+    {
+      "id": "loader",
+      "lane": "step",
+      "col": 1,
+      "type": "messagebus",
+      "label": "Shard DataLoader",
+      "sublabel": "16 windows × 4096 tok",
+      "width": 130,
+      "height": 48
+    },
+    {
+      "id": "noise",
+      "lane": "step",
+      "col": 2,
+      "type": "backend",
+      "label": "Uniform q_sample",
+      "sublabel": "t ~ U{1..16} · ᾱ(t) cosine",
+      "width": 130,
+      "height": 48
+    },
+    {
+      "id": "sc_pre",
+      "lane": "step",
+      "col": 3,
+      "type": "backend",
+      "label": "SC Pre-pass",
+      "sublabel": "p=0.5 · detached x̂0",
+      "width": 120,
+      "height": 48
+    },
+    {
+      "id": "loss_head",
+      "lane": "step",
+      "col": 4,
+      "type": "backend",
+      "label": "Chunked x0-CE",
+      "sublabel": "fp32 logsumexp · 8K chunks",
+      "width": 130,
+      "height": 48
+    },
+    {
+      "id": "bwd_clip",
+      "lane": "step",
+      "col": 5,
+      "type": "backend",
+      "label": "Backward & Clip",
+      "sublabel": "accum grad · norm ≤ 1.0",
+      "width": 125,
+      "height": 48
+    },
+    {
+      "id": "loss_guard",
+      "lane": "guard",
+      "col": 3,
+      "type": "security",
+      "label": "Loss Health Guard",
+      "sublabel": "divergence check",
+      "width": 125,
+      "height": 48
+    },
+    {
+      "id": "rollback",
+      "lane": "guard",
+      "col": 4,
+      "type": "security",
+      "label": "5-Fault Rollback",
+      "sublabel": "restore weights + opt",
+      "width": 130,
+      "height": 48
+    },
+    {
+      "id": "ckpt",
+      "lane": "guard",
+      "col": 5,
+      "type": "database",
+      "label": "Safetensors Ckpt",
+      "sublabel": "atomic temp + rename",
+      "width": 125,
+      "height": 48
+    }
+  ],
+  "edges": [
+    {
+      "id": "yaml-init",
+      "from": "yaml",
+      "to": "init",
+      "variant": "emphasis"
+    },
+    {
+      "id": "init-loader",
+      "from": "init",
+      "to": "loader"
+    },
+    {
+      "id": "loader-noise",
+      "from": "loader",
+      "to": "noise",
+      "label": "clean x0"
+    },
+    {
+      "id": "noise-sc",
+      "from": "noise",
+      "to": "sc_pre",
+      "label": "corrupted xt",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sc-loss",
+      "from": "sc_pre",
+      "to": "loss_head",
+      "label": "conditioned h",
+      "variant": "emphasis"
+    },
+    {
+      "id": "loss-bwd",
+      "from": "loss_head",
+      "to": "bwd_clip",
+      "variant": "emphasis"
+    },
+    {
+      "id": "bwd-adamw",
+      "from": "bwd_clip",
+      "to": "adamw",
+      "variant": "emphasis"
+    },
+    {
+      "id": "adamw-eval",
+      "from": "adamw",
+      "to": "eval_pass",
+      "variant": "dashed"
+    },
+    {
+      "id": "adamw-ckpt",
+      "from": "adamw",
+      "to": "ckpt",
+      "variant": "dashed"
+    },
+    {
+      "id": "loss-guard",
+      "from": "loss_head",
+      "to": "loss_guard",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "guard-rollback",
+      "from": "loss_guard",
+      "to": "rollback",
+      "label": "streak ≥ 5",
+      "variant": "security",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Batching & Objective",
+      "items": [
+        "Flat 4096-token sequences (16 canvases × 256 tokens) with 2× accumulation for effective batch size 32 (131,072 tokens/step).",
+        "Uniform noise schedule ᾱ(t) = cos²(π/2·t/T) corrupts x0 tokens with uniform vocabulary replacements.",
+        "Chunked x0 cross-entropy computes fp32 logsumexp in 8192-token blocks, eliminating full (B,T,V) logit materialization."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Self-Conditioning & Fault Safety",
+      "items": [
+        "Pre-pass with probability 0.5 embeds predicted x̂0 posterior, feeding detached representations to the primary forward pass.",
+        "Loss health guard verifies finite values before backward pass; 5 consecutive failures trigger atomic rollback to previous checkpoint."
+      ]
+    }
+  ]
+}
