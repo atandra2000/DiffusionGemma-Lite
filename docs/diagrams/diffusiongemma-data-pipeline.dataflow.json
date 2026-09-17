@@ -4,44 +4,73 @@
   "meta": {
     "title": "DiffusionGemma-Lite Data Pipeline & Windowing",
     "quality_profile": "showcase",
-    "viewBox": [1080, 420],
+    "viewBox": [
+      1080,
+      420
+    ],
     "views": [
       {
         "id": "full-pipeline",
         "label": "Full Pipeline",
-        "focus": ["sources", "tokenizer", "shards", "windows", "batch_x0", "corrupt_xt"],
+        "focus": [
+          "sources",
+          "tokenizer",
+          "shards",
+          "windows",
+          "batch_x0",
+          "corrupt_xt"
+        ],
         "note": "From 8.0B multi-source corpus to memory-mapped binary shards, window slicing, and clean/corrupted batches."
       },
       {
         "id": "sharding-windowing",
         "label": "Shards & Windows",
-        "focus": ["tokenizer", "shards", "windows", "shuffler"],
+        "focus": [
+          "tokenizer",
+          "shards",
+          "windows",
+          "shuffler"
+        ],
         "note": "160 shards of 50M uint32 tokens sliced into 4096-token windows with resumable seed-42 shuffling."
       },
       {
         "id": "training-feed",
         "label": "Training Feed",
-        "focus": ["windows", "batch_x0", "corrupt_xt"],
+        "focus": [
+          "windows",
+          "batch_x0",
+          "corrupt_xt"
+        ],
         "note": "Clean x0 tokens feed chunked-CE target loss while q_sample applies cosine noise schedule."
       }
     ]
   },
   "stages": [
-    { "label": "0 · Corpus Mixture" },
-    { "label": "1 · Tokenization" },
-    { "label": "2 · Binary Shards" },
-    { "label": "3 · Windowing & Shuffler" },
-    { "label": "4 · Training Batches" }
+    {
+      "label": "0 \u00b7 Corpus Mixture"
+    },
+    {
+      "label": "1 \u00b7 Tokenization"
+    },
+    {
+      "label": "2 \u00b7 Binary Shards"
+    },
+    {
+      "label": "3 \u00b7 Windowing & Shuffler"
+    },
+    {
+      "label": "4 \u00b7 Training Batches"
+    }
   ],
   "nodes": [
     {
       "id": "sources",
       "type": "database",
       "label": "Corpus Mixture",
-      "sublabel": "FineWeb · Stack · Math",
+      "sublabel": "FineWeb \u00b7 Stack \u00b7 Math",
       "stage": 0,
       "row": 0,
-      "tag": "8.0B tokens"
+      "tag": "8B-token budget"
     },
     {
       "id": "tokenizer",
@@ -56,28 +85,28 @@
       "id": "shards",
       "type": "database",
       "label": "Binary Shards",
-      "sublabel": "160 × 50M (32 GB)",
+      "sublabel": "storage dtype unverified",
       "stage": 2,
       "row": 0,
-      "tag": "uint32 memmap"
+      "tag": "check packing manifest"
     },
     {
       "id": "windows",
       "type": "backend",
       "label": "ShardWindows",
-      "sublabel": "4,096 tok = 16×256",
+      "sublabel": "copied, then int64",
       "stage": 3,
       "row": 0,
-      "tag": "no +1 shift"
+      "tag": "loader assumes uint32"
     },
     {
       "id": "shuffler",
       "type": "backend",
       "label": "Shuffled Sampler",
-      "sublabel": "epoch perm · seed 42",
+      "sublabel": "fixed seed permutation",
       "stage": 3,
       "row": 1,
-      "tag": "resumable cursor"
+      "tag": "offset, not epoch shuffle"
     },
     {
       "id": "batch_x0",
@@ -92,7 +121,7 @@
       "id": "corrupt_xt",
       "type": "backend",
       "label": "q_sample Corruption",
-      "sublabel": "cosine schedule ᾱ(t)",
+      "sublabel": "cosine schedule \u1fb1(t)",
       "stage": 4,
       "row": 1,
       "tag": "model input"
@@ -110,7 +139,7 @@
     {
       "from": "tokenizer",
       "to": "shards",
-      "label": "packed uint32",
+      "label": "packed tokens",
       "classification": "200MB/file",
       "variant": "emphasis",
       "route": "straight"
@@ -118,7 +147,7 @@
     {
       "from": "shards",
       "to": "windows",
-      "label": "mmap slices",
+      "label": "mmap + copy",
       "classification": "stride 4096",
       "variant": "emphasis",
       "route": "straight"
@@ -154,20 +183,27 @@
   ],
   "cards": [
     {
-      "dot": "cyan",
-      "title": "Shard & Windowing Contract",
+      "dot": "amber",
+      "title": "Storage contract requires verification",
       "items": [
-        "160 binary shards holding 50M uint32 GPT-2 tokens each (8.0B total tokens), accessed via zero-copy mmap.",
-        "Sequences are sliced into contiguous 4096-token windows (16 canvases × 256 tokens) with zero AR +1 offset.",
-        "Windows cross document boundaries with EOS separation, but never cross shard boundaries."
+        "No packing manifest was verified. select_token_dtype chooses uint16 for GPT-2 vocabulary 50,257, while ShardWindows assumes uint32. Verify emitted packing dtype before claiming compatibility.",
+        "160 \u00d7 50M tokens is 8B budget arithmetic, not an inventory. On-disk bytes depend on emitted dtype."
       ]
     },
     {
-      "dot": "emerald",
-      "title": "Deterministic Shuffler & Training Target",
+      "dot": "cyan",
+      "title": "Windows and order",
       "items": [
-        "ShuffledRangeSampler maintains an epoch-seeded permutation and epoch/cursor state for exact resume reproduction.",
-        "Dataset emits clean target tokens x0; trainer handles corruption to xt and scores the posterior against clean x0."
+        "data/dataset.py:ShardWindows.__getitem__ copies each within-shard slice and converts it to int64. It is not a zero-copy batch.",
+        "ShuffledRangeSampler uses a fixed (seed, n_windows) permutation and offset. It does not reshuffle each epoch."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Provenance",
+      "items": [
+        "Clean x0 is both the corruption source and reconstruction target. There is no AR +1 shift.",
+        "configs/pretrain_a100_380m.yaml at 83acb7cc6e3a597800cb6ae3be8ad673b100e6f3."
       ]
     }
   ]

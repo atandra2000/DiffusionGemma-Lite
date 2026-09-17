@@ -5,41 +5,241 @@
     "title": "DiffusionGemma-Lite Forward Pass",
     "quality_profile": "showcase",
     "locale": "en",
-    "viewBox": [1370, 780]
+    "viewBox": [
+      1370,
+      780
+    ]
   },
   "components": [
-    { "id": "noisy-canvas", "type": "external", "label": "Noisy canvas xₜ", "sublabel": "B×T IDs over 50,257", "tag": "train: q_sample · sample: uniform", "pos": [40, 360], "size": [150, 64] },
-    { "id": "canvas-time", "type": "backend", "label": "Canvas timestep", "sublabel": "one t per 256-token canvas", "tag": "ᾱ = cos²(π/2·t/T)", "pos": [285, 140], "size": [170, 64] },
-    { "id": "embed", "type": "backend", "label": "Token + time embedding", "sublabel": "embed(xₜ) + time(t/T) → d=1024", "pos": [280, 360], "size": [180, 64] },
-    { "id": "block-mask", "type": "security", "label": "Block-causal mask", "sublabel": "causal across · bidirectional within", "pos": [522.5, 140], "size": [210, 64] },
-    { "id": "blocks", "type": "backend", "label": "DenoiseBlock × 24", "sublabel": "RMSNorm → GQA/RoPE → SwiGLU", "pos": [530, 360], "size": [195, 64], "tag": "shared backbone" },
-    { "id": "final-norm", "type": "backend", "label": "Final RMSNorm", "sublabel": "post-backbone hidden", "pos": [795, 360], "size": [145, 64] },
-    { "id": "selfcond", "type": "backend", "label": "Self-conditioning", "sublabel": "re-embeds own posterior", "tag": "optional", "pos": [1000, 140], "size": [170, 64] },
-    { "id": "lm-head", "type": "backend", "label": "Tied LM head", "sublabel": "h · Eᵀ (weight-tied)", "pos": [1010, 360], "size": [150, 64] },
-    { "id": "posterior", "type": "database", "label": "x̂0 posterior", "sublabel": "softmax over 50,257 IDs", "pos": [1225, 360], "size": [145, 64] },
-    { "id": "chunked-ce", "type": "backend", "label": "Chunked x₀ cross-entropy", "sublabel": "fp32 logsumexp, 8,192 chunks", "tag": "training only", "pos": [1165, 580], "size": [195, 64] }
+    {
+      "id": "noisy-canvas",
+      "type": "external",
+      "label": "Noisy canvas x\u209c",
+      "sublabel": "B\u00d7T IDs over 50,257",
+      "tag": "train: q_sample \u00b7 sample: uniform",
+      "pos": [
+        40,
+        360
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "canvas-time",
+      "type": "backend",
+      "label": "Canvas timestep",
+      "sublabel": "one t per 256-token canvas",
+      "tag": "\u1fb1 = cos\u00b2(\u03c0/2\u00b7t/T)",
+      "pos": [
+        285,
+        140
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "embed",
+      "type": "backend",
+      "label": "Token + time embedding",
+      "sublabel": "embed(x\u209c) + time-MLP(t) \u2192 d=1024",
+      "pos": [
+        280,
+        360
+      ],
+      "size": [
+        180,
+        64
+      ]
+    },
+    {
+      "id": "block-mask",
+      "type": "security",
+      "label": "Block-causal mask",
+      "sublabel": "causal across \u00b7 bidirectional within",
+      "pos": [
+        522.5,
+        140
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "blocks",
+      "type": "backend",
+      "label": "DenoiseBlock \u00d7 24",
+      "sublabel": "RMSNorm \u2192 GQA/RoPE \u2192 SwiGLU",
+      "pos": [
+        530,
+        360
+      ],
+      "size": [
+        195,
+        64
+      ],
+      "tag": "shared backbone"
+    },
+    {
+      "id": "final-norm",
+      "type": "backend",
+      "label": "Final RMSNorm",
+      "sublabel": "post-backbone hidden",
+      "pos": [
+        795,
+        360
+      ],
+      "size": [
+        145,
+        64
+      ]
+    },
+    {
+      "id": "selfcond",
+      "type": "backend",
+      "label": "Self-conditioning",
+      "sublabel": "re-embeds own posterior",
+      "tag": "optional",
+      "pos": [
+        1000,
+        140
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "lm-head",
+      "type": "backend",
+      "label": "Conditioned hidden",
+      "sublabel": "optional self-cond add",
+      "pos": [
+        1010,
+        360
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "posterior",
+      "type": "database",
+      "label": "Sampling head",
+      "sublabel": "tied head \u2192 softmax",
+      "pos": [
+        1225,
+        360
+      ],
+      "size": [
+        145,
+        64
+      ]
+    },
+    {
+      "id": "chunked-ce",
+      "type": "backend",
+      "label": "Chunked x\u2080 cross-entropy",
+      "sublabel": "hidden + E + clean x0",
+      "tag": "training only",
+      "pos": [
+        980,
+        580
+      ],
+      "size": [
+        220,
+        64
+      ]
+    }
   ],
   "connections": [
-    { "from": "noisy-canvas", "to": "embed", "label": "corrupted IDs", "variant": "emphasis" },
-    { "from": "canvas-time", "to": "embed", "label": "t/T", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v" },
-    { "from": "embed", "to": "blocks", "label": "hidden states", "variant": "emphasis", "labelDy": 49 },
-    { "from": "block-mask", "to": "blocks", "label": "visibility", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v" },
-    { "from": "blocks", "to": "final-norm", "label": "final hidden", "variant": "emphasis" },
-    { "from": "final-norm", "to": "lm-head", "label": "conditioned hidden", "variant": "emphasis", "labelDy": 56 },
-    { "from": "selfcond", "to": "lm-head", "label": "sc add", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v" },
-    { "from": "lm-head", "to": "posterior", "label": "logits", "variant": "emphasis" },
-    { "from": "posterior", "to": "chunked-ce", "label": "vs clean x₀", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "route": "orthogonal-v" }
+    {
+      "from": "noisy-canvas",
+      "to": "embed",
+      "label": "corrupted IDs",
+      "variant": "emphasis"
+    },
+    {
+      "from": "canvas-time",
+      "to": "embed",
+      "label": "t/T into time-MLP",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "embed",
+      "to": "blocks",
+      "label": "hidden states",
+      "variant": "emphasis",
+      "labelDy": 49
+    },
+    {
+      "from": "block-mask",
+      "to": "blocks",
+      "label": "visibility",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "blocks",
+      "to": "final-norm",
+      "label": "final hidden",
+      "variant": "emphasis"
+    },
+    {
+      "from": "final-norm",
+      "to": "lm-head",
+      "label": "normalized hidden",
+      "variant": "emphasis",
+      "labelDy": 56
+    },
+    {
+      "from": "selfcond",
+      "to": "lm-head",
+      "label": "sc add",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-v"
+    },
+    {
+      "from": "lm-head",
+      "to": "posterior",
+      "label": "sampling",
+      "variant": "emphasis"
+    },
+    {
+      "from": "lm-head",
+      "to": "chunked-ce",
+      "label": "training",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
   ],
   "cards": [
-    { "dot": "cyan", "title": "Training", "items": [
-      "Each 256-token canvas draws its own timestep t ~ U{1..16}; q_sample corrupts x₀ directly under the cosine schedule.",
-      "The objective is chunked x₀ cross-entropy: fp32 logsumexp per vocab chunk — full (B,T,V) logits are never materialized.",
-      "With probability 0.5 a no-grad pre-pass re-embeds its own posterior; the second pass receives it detached."
-    ] },
-    { "dot": "emerald", "title": "Sampling", "items": [
-      "Each in-flight canvas starts from pure uniform token noise — never q_sample.",
-      "Every posterior commits unchanged-or-stronger positions; only uncommitted positions redraw.",
-      "A finalized canvas is re-encoded under an all-ones decode mask and appended to the KV cache."
-    ] }
+    {
+      "dot": "cyan",
+      "title": "Training",
+      "items": [
+        "training/pretrain.py:Pretrainer.diffusion_loss feeds final_hidden, embedding weights and clean targets to chunked_x0_ce. No full posterior feeds training CE.",
+        "Vocab chunk width 4096 at configured micro-batch 16. Each chunk retains logits for backward, so chunking is not a zero-allocation claim."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Sampling",
+      "items": [
+        "Sampling alone uses tied full-vocabulary logits and softmax. Already committed tokens are never overwritten.",
+        "Config: configs/pretrain_a100_380m.yaml. Source 83acb7cc6e3a597800cb6ae3be8ad673b100e6f3."
+      ]
+    }
   ]
 }

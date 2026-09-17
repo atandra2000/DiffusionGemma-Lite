@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="generator" content="archify 2.16.0-dev.0">
+  <meta name="generator" content="archify 2.17.0-dev.1">
   <title>DiffusionGemma-Lite Forward Pass Diagram</title>
   <script>
     // Resolve the theme before first paint so light-preference users don't
@@ -5034,14 +5034,14 @@
 
         <!-- Connection paths (before components for correct z-order) -->
         <path data-edge-from="noisy-canvas" data-edge-to="embed" data-edge-label="corrupted IDs" data-edge-key="0" data-composition-points="190,392;280,392" d="M 190 392 L 280 392" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="canvas-time" data-edge-to="embed" data-edge-label="t/T" data-edge-key="1" data-composition-points="370,204;370,282;370,282;370,360" d="M 370 204 L 370 282 L 370 282 L 370 360" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="canvas-time" data-edge-to="embed" data-edge-label="t/T into time-MLP" data-edge-key="1" data-composition-points="370,204;370,282;370,282;370,360" d="M 370 204 L 370 282 L 370 282 L 370 360" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="embed" data-edge-to="blocks" data-edge-label="hidden states" data-edge-key="2" data-composition-points="460,392;530,392" d="M 460 392 L 530 392" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="block-mask" data-edge-to="blocks" data-edge-label="visibility" data-edge-key="3" data-composition-points="627.5,204;627.5,282;627.5,282;627.5,360" d="M 627.5 204 L 627.5 282 L 627.5 282 L 627.5 360" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="blocks" data-edge-to="final-norm" data-edge-label="final hidden" data-edge-key="4" data-composition-points="725,392;795,392" d="M 725 392 L 795 392" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="final-norm" data-edge-to="lm-head" data-edge-label="conditioned hidden" data-edge-key="5" data-composition-points="940,392;1010,392" d="M 940 392 L 1010 392" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="final-norm" data-edge-to="lm-head" data-edge-label="normalized hidden" data-edge-key="5" data-composition-points="940,392;1010,392" d="M 940 392 L 1010 392" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="selfcond" data-edge-to="lm-head" data-edge-label="sc add" data-edge-key="6" data-composition-points="1085,204;1085,282;1085,282;1085,360" d="M 1085 204 L 1085 282 L 1085 282 L 1085 360" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="lm-head" data-edge-to="posterior" data-edge-label="logits" data-edge-key="7" data-composition-points="1160,392;1225,392" d="M 1160 392 L 1225 392" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="posterior" data-edge-to="chunked-ce" data-edge-label="vs clean x₀" data-edge-key="8" data-composition-points="1297.5,424;1297.5,502;1262.5,502;1262.5,580" d="M 1297.5 424 L 1297.5 494 Q 1297.5 502 1289.5 502 L 1270.5 502 Q 1262.5 502 1262.5 510 L 1262.5 580" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="lm-head" data-edge-to="posterior" data-edge-label="sampling" data-edge-key="7" data-composition-points="1160,392;1225,392" d="M 1160 392 L 1225 392" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="lm-head" data-edge-to="chunked-ce" data-edge-label="training" data-edge-key="8" data-composition-points="1085,424;1085,448;1106,448;1106,556;1090,556;1090,580" d="M 1085 424 L 1085 440 Q 1085 448 1093 448 L 1098 448 Q 1106 448 1106 456 L 1106 548 Q 1106 556 1098 556 L 1098 556 Q 1090 556 1090 564 L 1090 580" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Components -->
         <g id="node-noisy-canvas" data-node-id="noisy-canvas" data-node-label="Noisy canvas xₜ" tabindex="0" role="button" aria-label="Focus Noisy canvas xₜ, B×T IDs over 50,257, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="B×T IDs over 50,257" data-node-tag="train: q_sample · sample: uniform" data-node-context="Architecture component">
@@ -5069,15 +5069,15 @@
         <text data-detail="fine" x="370" y="196" class="t-backend" font-size="7" text-anchor="middle">ᾱ = cos²(π/2·t/T)</text>
         </g>
 
-        <g id="node-embed" data-node-id="embed" data-node-label="Token + time embedding" tabindex="0" role="button" aria-label="Focus Token + time embedding, embed(xₜ) + time(t/T) → d=1024, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="embed(xₜ) + time(t/T) → d=1024" data-node-context="Architecture component">
-          <title>Token + time embedding · embed(xₜ) + time(t/T) → d=1024 · Architecture component</title>
+        <g id="node-embed" data-node-id="embed" data-node-label="Token + time embedding" tabindex="0" role="button" aria-label="Focus Token + time embedding, embed(xₜ) + time-MLP(t) → d=1024, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="embed(xₜ) + time-MLP(t) → d=1024" data-node-context="Architecture component">
+          <title>Token + time embedding · embed(xₜ) + time-MLP(t) → d=1024 · Architecture component</title>
           <rect x="280" y="360" width="180" height="64" rx="6" class="c-mask"/>
           <rect x="280" y="360" width="180" height="64" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(286 366) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="370" y="390" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Token + time embedding</text>
-        <text data-detail="context" x="370" y="406" class="t-muted" font-size="9" text-anchor="middle">embed(xₜ) + time(t/T) → d=1024</text>
+        <text data-detail="context" x="370" y="406" class="t-muted" font-size="8.9" text-anchor="middle">embed(xₜ) + time-MLP(t) → d=1024</text>
         </g>
 
         <g id="node-block-mask" data-node-id="block-mask" data-node-label="Block-causal mask" tabindex="0" role="button" aria-label="Focus Block-causal mask, causal across · bidirectional within, Architecture component" aria-pressed="false" data-node-kind="security" data-node-sublabel="causal across · bidirectional within" data-node-context="Architecture component">
@@ -5127,39 +5127,39 @@
         <text data-detail="fine" x="1085" y="196" class="t-backend" font-size="7" text-anchor="middle">optional</text>
         </g>
 
-        <g id="node-lm-head" data-node-id="lm-head" data-node-label="Tied LM head" tabindex="0" role="button" aria-label="Focus Tied LM head, h · Eᵀ (weight-tied), Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="h · Eᵀ (weight-tied)" data-node-context="Architecture component">
-          <title>Tied LM head · h · Eᵀ (weight-tied) · Architecture component</title>
+        <g id="node-lm-head" data-node-id="lm-head" data-node-label="Conditioned hidden" tabindex="0" role="button" aria-label="Focus Conditioned hidden, optional self-cond add, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="optional self-cond add" data-node-context="Architecture component">
+          <title>Conditioned hidden · optional self-cond add · Architecture component</title>
           <rect x="1010" y="360" width="150" height="64" rx="6" class="c-mask"/>
           <rect x="1010" y="360" width="150" height="64" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1016 366) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1085" y="390" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Tied LM head</text>
-        <text data-detail="context" x="1085" y="406" class="t-muted" font-size="9" text-anchor="middle">h · Eᵀ (weight-tied)</text>
+          <text data-node-label="" data-detail-anchor="" x="1085" y="390" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Conditioned hidden</text>
+        <text data-detail="context" x="1085" y="406" class="t-muted" font-size="9" text-anchor="middle">optional self-cond add</text>
         </g>
 
-        <g id="node-posterior" data-node-id="posterior" data-node-label="x̂0 posterior" tabindex="0" role="button" aria-label="Focus x̂0 posterior, softmax over 50,257 IDs, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="softmax over 50,257 IDs" data-node-context="Architecture component">
-          <title>x̂0 posterior · softmax over 50,257 IDs · Architecture component</title>
+        <g id="node-posterior" data-node-id="posterior" data-node-label="Sampling head" tabindex="0" role="button" aria-label="Focus Sampling head, tied head → softmax, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="tied head → softmax" data-node-context="Architecture component">
+          <title>Sampling head · tied head → softmax · Architecture component</title>
           <rect x="1225" y="360" width="145" height="64" rx="6" class="c-mask"/>
           <rect x="1225" y="360" width="145" height="64" rx="6" class="c-database" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(1231 366) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1297.5" y="390" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">x̂0 posterior</text>
-        <text data-detail="context" x="1297.5" y="406" class="t-muted" font-size="9" text-anchor="middle">softmax over 50,257 IDs</text>
+          <text data-node-label="" data-detail-anchor="" x="1297.5" y="390" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Sampling head</text>
+        <text data-detail="context" x="1297.5" y="406" class="t-muted" font-size="9" text-anchor="middle">tied head → softmax</text>
         </g>
 
-        <g id="node-chunked-ce" data-node-id="chunked-ce" data-node-label="Chunked x₀ cross-entropy" tabindex="0" role="button" aria-label="Focus Chunked x₀ cross-entropy, fp32 logsumexp, 8,192 chunks, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="fp32 logsumexp, 8,192 chunks" data-node-tag="training only" data-node-context="Architecture component">
-          <title>Chunked x₀ cross-entropy · fp32 logsumexp, 8,192 chunks · Architecture component · training only</title>
-          <rect x="1165" y="580" width="195" height="64" rx="6" class="c-mask"/>
-          <rect x="1165" y="580" width="195" height="64" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1171 586) scale(0.6875)">
+        <g id="node-chunked-ce" data-node-id="chunked-ce" data-node-label="Chunked x₀ cross-entropy" tabindex="0" role="button" aria-label="Focus Chunked x₀ cross-entropy, hidden + E + clean x0, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="hidden + E + clean x0" data-node-tag="training only" data-node-context="Architecture component">
+          <title>Chunked x₀ cross-entropy · hidden + E + clean x0 · Architecture component · training only</title>
+          <rect x="980" y="580" width="220" height="64" rx="6" class="c-mask"/>
+          <rect x="980" y="580" width="220" height="64" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(986 586) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1262.5" y="610" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Chunked x₀ cross-entropy</text>
-        <text data-detail="context" x="1262.5" y="626" class="t-muted" font-size="9" text-anchor="middle">fp32 logsumexp, 8,192 chunks</text>
-        <text data-detail="fine" x="1262.5" y="636" class="t-backend" font-size="7" text-anchor="middle">training only</text>
+          <text data-node-label="" data-detail-anchor="" x="1090" y="610" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Chunked x₀ cross-entropy</text>
+        <text data-detail="context" x="1090" y="626" class="t-muted" font-size="9" text-anchor="middle">hidden + E + clean x0</text>
+        <text data-detail="fine" x="1090" y="636" class="t-backend" font-size="7" text-anchor="middle">training only</text>
         </g>
 
         <!-- Connection labels -->
@@ -5167,9 +5167,9 @@
           <rect x="198.8" y="372" width="72.4" height="14" rx="3" class="c-mask"/>
           <text x="235" y="382" class="t-backend" font-size="8" text-anchor="middle">corrupted IDs</text>
         </g>
-        <g data-detail="context" data-edge-from="canvas-time" data-edge-to="embed" data-edge-label="t/T" data-edge-key="1">
-          <rect x="355" y="262" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="370" y="272" class="t-muted" font-size="8" text-anchor="middle">t/T</text>
+        <g data-detail="context" data-edge-from="canvas-time" data-edge-to="embed" data-edge-label="t/T into time-MLP" data-edge-key="1">
+          <rect x="324.2" y="262" width="91.6" height="14" rx="3" class="c-mask"/>
+          <text x="370" y="272" class="t-muted" font-size="8" text-anchor="middle">t/T into time-MLP</text>
         </g>
         <g data-detail="context" data-edge-from="embed" data-edge-to="blocks" data-edge-label="hidden states" data-edge-key="2">
           <rect x="458.8" y="421" width="72.4" height="14" rx="3" class="c-mask"/>
@@ -5183,21 +5183,21 @@
           <rect x="726.2" y="372" width="67.6" height="14" rx="3" class="c-mask"/>
           <text x="760" y="382" class="t-backend" font-size="8" text-anchor="middle">final hidden</text>
         </g>
-        <g data-detail="context" data-edge-from="final-norm" data-edge-to="lm-head" data-edge-label="conditioned hidden" data-edge-key="5">
-          <rect x="926.8" y="428" width="96.39999999999999" height="14" rx="3" class="c-mask"/>
-          <text x="975" y="438" class="t-backend" font-size="8" text-anchor="middle">conditioned hidden</text>
+        <g data-detail="context" data-edge-from="final-norm" data-edge-to="lm-head" data-edge-label="normalized hidden" data-edge-key="5">
+          <rect x="929.2" y="428" width="91.6" height="14" rx="3" class="c-mask"/>
+          <text x="975" y="438" class="t-backend" font-size="8" text-anchor="middle">normalized hidden</text>
         </g>
         <g data-detail="context" data-edge-from="selfcond" data-edge-to="lm-head" data-edge-label="sc add" data-edge-key="6">
           <rect x="1065.6" y="262" width="38.8" height="14" rx="3" class="c-mask"/>
           <text x="1085" y="272" class="t-messagebus" font-size="8" text-anchor="middle">sc add</text>
         </g>
-        <g data-detail="context" data-edge-from="lm-head" data-edge-to="posterior" data-edge-label="logits" data-edge-key="7">
-          <rect x="1173.1" y="372" width="38.8" height="14" rx="3" class="c-mask"/>
-          <text x="1192.5" y="382" class="t-backend" font-size="8" text-anchor="middle">logits</text>
+        <g data-detail="context" data-edge-from="lm-head" data-edge-to="posterior" data-edge-label="sampling" data-edge-key="7">
+          <rect x="1168.3" y="372" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="1192.5" y="382" class="t-backend" font-size="8" text-anchor="middle">sampling</text>
         </g>
-        <g data-detail="context" data-edge-from="posterior" data-edge-to="chunked-ce" data-edge-label="vs clean x₀" data-edge-key="8">
-          <rect x="1248.6" y="482" width="62.8" height="14" rx="3" class="c-mask"/>
-          <text x="1280" y="492" class="t-messagebus" font-size="8" text-anchor="middle">vs clean x₀</text>
+        <g data-detail="context" data-edge-from="lm-head" data-edge-to="chunked-ce" data-edge-label="training" data-edge-key="8">
+          <rect x="1071.3" y="428" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="1095.5" y="438" class="t-messagebus" font-size="8" text-anchor="middle">training</text>
         </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
@@ -5415,9 +5415,8 @@
           <h3>Training</h3>
         </div>
         <ul>
-          <li>&bull; Each 256-token canvas draws its own timestep t ~ U{1..16}; q_sample corrupts x₀ directly under the cosine schedule.</li>
-          <li>&bull; The objective is chunked x₀ cross-entropy: fp32 logsumexp per vocab chunk — full (B,T,V) logits are never materialized.</li>
-          <li>&bull; With probability 0.5 a no-grad pre-pass re-embeds its own posterior; the second pass receives it detached.</li>
+          <li>&bull; training/pretrain.py:Pretrainer.diffusion_loss feeds final_hidden, embedding weights and clean targets to chunked_x0_ce. No full posterior feeds training CE.</li>
+          <li>&bull; Vocab chunk width 4096 at configured micro-batch 16. Each chunk retains logits for backward, so chunking is not a zero-allocation claim.</li>
         </ul>
       </div>
 
@@ -5427,9 +5426,8 @@
           <h3>Sampling</h3>
         </div>
         <ul>
-          <li>&bull; Each in-flight canvas starts from pure uniform token noise — never q_sample.</li>
-          <li>&bull; Every posterior commits unchanged-or-stronger positions; only uncommitted positions redraw.</li>
-          <li>&bull; A finalized canvas is re-encoded under an all-ones decode mask and appended to the KV cache.</li>
+          <li>&bull; Sampling alone uses tied full-vocabulary logits and softmax. Already committed tokens are never overwritten.</li>
+          <li>&bull; Config: configs/pretrain_a100_380m.yaml. Source 83acb7cc6e3a597800cb6ae3be8ad673b100e6f3.</li>
         </ul>
       </div>
     </div>

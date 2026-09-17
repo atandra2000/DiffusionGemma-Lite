@@ -2,264 +2,286 @@
   "schema_version": 2,
   "diagram_type": "workflow",
   "meta": {
-    "title": "DiffusionGemma-Lite Training Pipeline & Recovery",
-    "quality_profile": "showcase",
-    "views": [
-      {
-        "id": "training-loop",
-        "label": "Training Loop",
-        "focus": ["yaml", "init", "loader", "noise", "sc_pre", "loss_head", "bwd_clip", "adamw"],
-        "note": "Main training path: flat shard loading, cosine corruption, detached self-conditioning, and chunked x0-CE."
-      },
-      {
-        "id": "self-conditioning",
-        "label": "Self-Conditioning",
-        "focus": ["noise", "sc_pre", "loss_head"],
-        "note": "Pre-pass with p=0.5 generates detached posterior estimate x̂0 to condition second forward pass."
-      },
-      {
-        "id": "fault-recovery",
-        "label": "Fault Recovery",
-        "focus": ["loss_head", "loss_guard", "rollback", "ckpt"],
-        "note": "Non-finite loss triggers health guard; 5 consecutive failures roll back to last atomic checkpoint."
-      }
-    ]
+    "title": "DiffusionGemma Training and Recovery",
+    "quality_profile": "showcase"
   },
   "lanes": [
     {
-      "id": "setup",
-      "label": "Setup & Optimization"
+      "id": "micro",
+      "label": "Micro-batch computation"
     },
     {
-      "id": "step",
-      "label": "Micro-Step Loop (×2 accum)"
+      "id": "update",
+      "label": "Optimizer and recovery"
     },
     {
-      "id": "guard",
-      "label": "Fault Recovery & Storage",
-      "variant": "exception"
+      "id": "control",
+      "label": "Continue or finish"
     }
   ],
   "mainPath": [
-    "yaml",
-    "init",
-    "loader",
-    "noise",
-    "sc_pre",
-    "loss_head",
-    "bwd_clip",
-    "adamw"
+    "fetch",
+    "loss",
+    "finite",
+    "bwd",
+    "boundary",
+    "commit",
+    "cadence"
   ],
   "nodes": [
     {
-      "id": "yaml",
-      "lane": "setup",
-      "col": 0,
+      "id": "fetch",
       "type": "external",
-      "label": "pretrain YAML",
-      "sublabel": "a100_380m config",
-      "width": 120,
-      "height": 48
+      "label": "Fetch clean x0",
+      "sublabel": "16 \u00d7 4096 tokens",
+      "lane": "micro",
+      "col": 0,
+      "width": 150,
+      "height": 58
     },
     {
-      "id": "init",
-      "lane": "setup",
+      "id": "loss",
+      "type": "backend",
+      "label": "Corrupt + forward",
+      "sublabel": "self-cond + chunked CE",
+      "lane": "micro",
       "col": 1,
-      "type": "backend",
-      "label": "Trainer Init",
-      "sublabel": "Gemma2 + AdamW + Cosine",
-      "width": 130,
-      "height": 48
+      "width": 150,
+      "height": 58
     },
     {
-      "id": "eval_pass",
-      "lane": "setup",
-      "col": 4,
-      "type": "backend",
-      "label": "Held-out NLL",
-      "sublabel": "x0-CE on val shards",
-      "width": 120,
-      "height": 48
-    },
-    {
-      "id": "adamw",
-      "lane": "setup",
-      "col": 5,
-      "type": "backend",
-      "label": "AdamW Step",
-      "sublabel": "lr 3e-4 · β (0.9, 0.95)",
-      "width": 120,
-      "height": 48
-    },
-    {
-      "id": "loader",
-      "lane": "step",
-      "col": 1,
-      "type": "messagebus",
-      "label": "Shard DataLoader",
-      "sublabel": "16 windows × 4096 tok",
-      "width": 130,
-      "height": 48
-    },
-    {
-      "id": "noise",
-      "lane": "step",
+      "id": "finite",
+      "type": "security",
+      "label": "Finite loss?",
+      "sublabel": "configured guard",
+      "lane": "micro",
       "col": 2,
-      "type": "backend",
-      "label": "Uniform q_sample",
-      "sublabel": "t ~ U{1..16} · ᾱ(t) cosine",
-      "width": 130,
-      "height": 48
+      "width": 150,
+      "height": 58
     },
     {
-      "id": "sc_pre",
-      "lane": "step",
+      "id": "bwd",
+      "type": "backend",
+      "label": "Backward",
+      "sublabel": "loss / 2",
+      "lane": "micro",
       "col": 3,
-      "type": "backend",
-      "label": "SC Pre-pass",
-      "sublabel": "p=0.5 · detached x̂0",
-      "width": 120,
-      "height": 48
+      "width": 150,
+      "height": 58
     },
     {
-      "id": "loss_head",
-      "lane": "step",
+      "id": "boundary",
+      "type": "security",
+      "label": "Update due?",
+      "sublabel": "every 2 micro-steps",
+      "lane": "micro",
       "col": 4,
-      "type": "backend",
-      "label": "Chunked x0-CE",
-      "sublabel": "fp32 logsumexp · 8K chunks",
-      "width": 130,
-      "height": 48
+      "width": 150,
+      "height": 58
     },
     {
-      "id": "bwd_clip",
-      "lane": "step",
+      "id": "recovery",
+      "type": "security",
+      "label": "Skip / recovery",
+      "sublabel": "clear grads, count faults",
+      "lane": "update",
+      "col": 2,
+      "width": 150,
+      "height": 58
+    },
+    {
+      "id": "commit",
+      "type": "backend",
+      "label": "Clip + AdamW",
+      "sublabel": "scheduler, zero grad",
+      "lane": "update",
+      "col": 4,
+      "width": 150,
+      "height": 58
+    },
+    {
+      "id": "cadence",
+      "type": "backend",
+      "label": "Log / save",
+      "sublabel": "optimizer-step cadence",
+      "lane": "update",
       "col": 5,
-      "type": "backend",
-      "label": "Backward & Clip",
-      "sublabel": "accum grad · norm ≤ 1.0",
-      "width": 125,
-      "height": 48
+      "width": 150,
+      "height": 58
     },
     {
-      "id": "loss_guard",
-      "lane": "guard",
+      "id": "next",
+      "type": "security",
+      "label": "More updates?",
+      "sublabel": "stop at configured limit",
+      "lane": "control",
+      "col": 0,
+      "width": 150,
+      "height": 58
+    },
+    {
+      "id": "final",
+      "type": "database",
+      "label": "Final checkpoint",
+      "sublabel": "direct three-file write",
+      "lane": "control",
+      "col": 1,
+      "width": 150,
+      "height": 58
+    },
+    {
+      "id": "abort",
+      "type": "external",
+      "label": "Abort",
+      "sublabel": "no recovery checkpoint",
+      "lane": "update",
       "col": 3,
-      "type": "security",
-      "label": "Loss Health Guard",
-      "sublabel": "divergence check",
-      "width": 125,
-      "height": 48
-    },
-    {
-      "id": "rollback",
-      "lane": "guard",
-      "col": 4,
-      "type": "security",
-      "label": "5-Fault Rollback",
-      "sublabel": "restore weights + opt",
-      "width": 130,
-      "height": 48
+      "width": 150,
+      "height": 58
     },
     {
       "id": "ckpt",
-      "lane": "guard",
-      "col": 5,
       "type": "database",
-      "label": "Safetensors Ckpt",
-      "sublabel": "atomic temp + rename",
-      "width": 125,
-      "height": 48
+      "label": "Checkpoint files",
+      "sublabel": "weights + optim + JSON",
+      "lane": "control",
+      "col": 5,
+      "width": 150,
+      "height": 58
     }
   ],
   "edges": [
     {
-      "id": "yaml-init",
-      "from": "yaml",
-      "to": "init",
-      "variant": "emphasis"
+      "id": "fetch-loss",
+      "from": "fetch",
+      "to": "loss",
+      "role": "main",
+      "variant": "default"
     },
     {
-      "id": "init-loader",
-      "from": "init",
-      "to": "loader"
+      "id": "loss-finite",
+      "from": "loss",
+      "to": "finite",
+      "role": "main",
+      "variant": "default"
     },
     {
-      "id": "loader-noise",
-      "from": "loader",
-      "to": "noise",
-      "label": "clean x0"
+      "id": "finite-bwd",
+      "from": "finite",
+      "to": "bwd",
+      "role": "main",
+      "variant": "default",
+      "label": "yes"
     },
     {
-      "id": "noise-sc",
-      "from": "noise",
-      "to": "sc_pre",
-      "label": "corrupted xt",
-      "variant": "emphasis"
+      "id": "finite-recovery",
+      "from": "finite",
+      "to": "recovery",
+      "role": "error",
+      "variant": "security",
+      "label": "no"
     },
     {
-      "id": "sc-loss",
-      "from": "sc_pre",
-      "to": "loss_head",
-      "label": "conditioned h",
-      "variant": "emphasis"
+      "id": "recovery-next",
+      "from": "recovery",
+      "to": "next",
+      "role": "return",
+      "variant": "default",
+      "label": "skip / restored"
     },
     {
-      "id": "loss-bwd",
-      "from": "loss_head",
-      "to": "bwd_clip",
-      "variant": "emphasis"
+      "id": "recovery-abort",
+      "from": "recovery",
+      "to": "abort",
+      "role": "error",
+      "variant": "security",
+      "label": "5 faults, no save"
     },
     {
-      "id": "bwd-adamw",
-      "from": "bwd_clip",
-      "to": "adamw",
-      "variant": "emphasis"
+      "id": "bwd-boundary",
+      "from": "bwd",
+      "to": "boundary",
+      "role": "main",
+      "variant": "default"
     },
     {
-      "id": "adamw-eval",
-      "from": "adamw",
-      "to": "eval_pass",
-      "variant": "dashed"
+      "id": "boundary-commit",
+      "from": "boundary",
+      "to": "commit",
+      "role": "main",
+      "variant": "default",
+      "label": "yes"
     },
     {
-      "id": "adamw-ckpt",
-      "from": "adamw",
+      "id": "boundary-next",
+      "from": "boundary",
+      "to": "next",
+      "role": "return",
+      "variant": "default",
+      "label": "no"
+    },
+    {
+      "id": "commit-cadence",
+      "from": "commit",
+      "to": "cadence",
+      "role": "main",
+      "variant": "default"
+    },
+    {
+      "id": "cadence-next",
+      "from": "cadence",
+      "to": "next",
+      "role": "return",
+      "variant": "default"
+    },
+    {
+      "id": "cadence-ckpt",
+      "from": "cadence",
       "to": "ckpt",
-      "variant": "dashed"
+      "role": "branch",
+      "variant": "dashed",
+      "label": "save due"
     },
     {
-      "id": "loss-guard",
-      "from": "loss_head",
-      "to": "loss_guard",
-      "variant": "security",
-      "role": "error"
+      "id": "next-fetch",
+      "from": "next",
+      "to": "fetch",
+      "role": "return",
+      "variant": "default",
+      "label": "yes"
     },
     {
-      "id": "guard-rollback",
-      "from": "loss_guard",
-      "to": "rollback",
-      "label": "streak ≥ 5",
-      "variant": "security",
-      "role": "error"
+      "id": "next-final",
+      "from": "next",
+      "to": "final",
+      "role": "branch",
+      "variant": "default",
+      "label": "no"
     }
   ],
   "cards": [
     {
       "dot": "cyan",
-      "title": "Batching & Objective",
+      "title": "Configured training",
       "items": [
-        "Flat 4096-token sequences (16 canvases × 256 tokens) with 2× accumulation for effective batch size 32 (131,072 tokens/step).",
-        "Uniform noise schedule ᾱ(t) = cos²(π/2·t/T) corrupts x0 tokens with uniform vocabulary replacements.",
-        "Chunked x0 cross-entropy computes fp32 logsumexp in 8192-token blocks, eliminating full (B,T,V) logit materialization."
+        "DiffusionGemma initialization, not Gemma2 weights. Chunk width 4096 at micro-batch 16, accumulation 2.",
+        "training/pretrain.py:Pretrainer.train has no validation transition. Saves/logs key off optimizer steps, but may repeat across micro-steps."
       ]
     },
     {
-      "dot": "rose",
-      "title": "Self-Conditioning & Fault Safety",
+      "dot": "amber",
+      "title": "Recovery limits",
       "items": [
-        "Pre-pass with probability 0.5 embeds predicted x̂0 posterior, feeding detached representations to the primary forward pass.",
-        "Loss health guard verifies finite values before backward pass; 5 consecutive failures trigger atomic rollback to previous checkpoint."
+        "Five consecutive nonfinite micro-batches restore the latest complete checkpoint or abort if none exists.",
+        "utils/checkpoint.py:CheckpointManager.save writes three files directly, not atomic rename. RNG and pending gradients are not saved."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Source and resume",
+      "items": [
+        "Per-step seeded draws and fixed-order offsets support reproducibility. _micro_count is reconstructed from optimizer count, so skipped batches complicate exact resume.",
+        "configs/pretrain_a100_380m.yaml at 83acb7cc6e3a597800cb6ae3be8ad673b100e6f3."
       ]
     }
   ]

@@ -1,58 +1,51 @@
-# Archify delivery evidence — DiffusionGemma-Lite
+# DiffusionGemma diagram evidence
 
-The [interactive visual guide](diffusiongemma_visual_guide.html) links five standalone showcase architecture, dataflow, and workflow diagrams.
+Source revision: `83acb7cc6e3a597800cb6ae3be8ad673b100e6f3`. Configuration: `configs/pretrain_a100_380m.yaml`.
 
-All five: **9/9 showcase checks, 0 composition errors, 0 warnings; automated browser evidence passed.**
+All five corrected specs: 9/9 showcase checks, zero composition errors/warnings. Fresh automated browser evidence passed at 1440×900, 1600×1000, 1920×1080 and 2048×1320 in light theme, with light/dark endpoint captures. Exact HTML hashes match their browser receipts.
 
-Chrome checked at 1440×900, 1600×1000, 1920×1080 and 2048×1320 in light/dark. All required viewport measurements passed horizontal/vertical containment, minimum projected text size and viewer-control clearance.
+Perceptual visual review: **skipped, image input unavailable**. Proposed 12px essential / 11px secondary target: **not met**. No interaction/export or guide mobile acceptance claim. No GPU, corpus-inventory or trained-quality measurements.
 
-## Artifact bindings
+## diffusiongemma-data-pipeline
 
-### System Overview
+- Spec: `diffusiongemma-data-pipeline.dataflow.json`
+- Spec SHA-256: `64b27ff99f4e05a574ad192f5a0b31cf9d8e16b8168aabc641fc9bbb92942fa4`
+- HTML SHA-256: `2663a1e534d5c43fa79367f010830ddcdd6c78c0afe7436305b4832703adc120`
+- Browser receipt: `diffusiongemma-data-pipeline.visual-check.json`
+- Minimum recorded node text: 7 px.
 
-- Diagram type: `architecture`
-- Output: [diffusiongemma-system.html](diffusiongemma-system.html)
-- Specification: `docs/diagrams/diffusiongemma-system.architecture.json`
-- Artifact SHA-256: `c9ab4f78e54f387522395195f543ce7ac5a9ba9c9845fca42420f6fadb328301` (715,789 bytes)
-- [Browser receipt](diffusiongemma-system.visual-check.json) · [Screenshot contact sheet](diffusiongemma-system.visual-check.html)
-- `browser_evidence: passed` · `visual_review: passed` · `correction_rounds: 0`
+## diffusiongemma-forward-pass
 
-### Forward Pass & Block Attention
+- Spec: `diffusiongemma-forward-pass.architecture.json`
+- Spec SHA-256: `0a1053157f3cf7de0e8ab289153f4de5f689bbc229d41e143ca4779b5d878890`
+- HTML SHA-256: `9f7a4afd02749919237268d5ecc85c862247f7fc4dc49f0867ccf268e50aed9d`
+- Browser receipt: `diffusiongemma-forward-pass.visual-check.json`
+- Minimum recorded node text: 6.665255474452555 px.
 
-- Diagram type: `architecture`
-- Output: [diffusiongemma-forward-pass.html](diffusiongemma-forward-pass.html)
-- Specification: `docs/diagrams/diffusiongemma-forward-pass.architecture.json`
-- Artifact SHA-256: `990af736500434091ecd96836c9488270aed4822c8b3676b2f3369cb6c619e11` (714,975 bytes)
-- [Browser receipt](diffusiongemma-forward-pass.visual-check.json) · [Screenshot contact sheet](diffusiongemma-forward-pass.visual-check.html)
-- `browser_evidence: passed` · `visual_review: passed` · `correction_rounds: 0`
+## diffusiongemma-sampler
 
-### Data Pipeline & Block Packing
+- Spec: `diffusiongemma-sampler.workflow.json`
+- Spec SHA-256: `a6b3fafb88ee04c909fe7a72ce0339bab8afa725d58060fc5ae03ca2f47961b1`
+- HTML SHA-256: `20cda9de4cdd32ab7b7cfb1097784d4a89e3230d928fc98effd15896e17a115e`
+- Browser receipt: `diffusiongemma-sampler.visual-check.json`
+- Minimum recorded node text: 8 px.
 
-- Diagram type: `dataflow`
-- Output: [diffusiongemma-data-pipeline.html](diffusiongemma-data-pipeline.html)
-- Specification: `docs/diagrams/diffusiongemma-data-pipeline.dataflow.json`
-- Artifact SHA-256: `2578268bbcc6b6c9cb33bf9458d06cd5f3f778e7c95df1d3cb61b3aaca634f10` (711,840 bytes)
-- [Browser receipt](diffusiongemma-data-pipeline.visual-check.json) · [Screenshot contact sheet](diffusiongemma-data-pipeline.visual-check.html)
-- `browser_evidence: passed` · `visual_review: passed` · `correction_rounds: 0`
+## diffusiongemma-system
 
-### Discrete Diffusion Sampler
+- Spec: `diffusiongemma-system.architecture.json`
+- Spec SHA-256: `dd87554ec79584c2c0f113ca26018140bda854dded6a9d58f5bfb7d9c5c7683a`
+- HTML SHA-256: `e3033a5246af95a82dde7f49d7647c38bcfa3321164a2166f6ff957aed932825`
+- Browser receipt: `diffusiongemma-system.visual-check.json`
+- Minimum recorded node text: 6.071739130434782 px.
 
-- Diagram type: `workflow`
-- Output: [diffusiongemma-sampler.html](diffusiongemma-sampler.html)
-- Specification: `docs/diagrams/diffusiongemma-sampler.workflow.json`
-- Artifact SHA-256: `929b8f9b3345c06417ec8f1bb466c9af83df881ffbf47c56471860d667b6b5fe` (718,972 bytes)
-- [Browser receipt](diffusiongemma-sampler.visual-check.json) · [Screenshot contact sheet](diffusiongemma-sampler.visual-check.html)
-- `browser_evidence: passed` · `visual_review: passed` · `correction_rounds: 0`
+## diffusiongemma-training
 
-### Training Pipeline & Loss Rollout
+- Spec: `diffusiongemma-training.workflow.json`
+- Spec SHA-256: `3eb514d5ed91d24fa454bff0f94e5c621384e475d254d43fe0de761195fbd4b0`
+- HTML SHA-256: `f7090417a87dadf31bc18a192ca75c618d89b026e680039448044b7e3b2076a3`
+- Browser receipt: `diffusiongemma-training.visual-check.json`
+- Minimum recorded node text: 8 px.
 
-- Diagram type: `workflow`
-- Output: [diffusiongemma-training.html](diffusiongemma-training.html)
-- Specification: `docs/diagrams/diffusiongemma-training.workflow.json`
-- Artifact SHA-256: `1270350232e9d70d56aba57a0255f86ea58ac5cf9f2caf3bfda7e39f5d08618a` (717,737 bytes)
-- [Browser receipt](diffusiongemma-training.visual-check.json) · [Screenshot contact sheet](diffusiongemma-training.visual-check.html)
-- `browser_evidence: passed` · `visual_review: passed` · `correction_rounds: 0`
+## Source corrections
 
-## Verification limits
-
-Parameter count: exactly 343,516,160 parameters (~343.5M). Trained on 8.0B tokens with uniform-state discrete diffusion (D3PM), block-causal attention across 256-token canvases, and self-conditioning. Single A100 80GB baseline budget estimated at ~40–50 hours.
+Time conditioning enters backbone embeddings. Training CE consumes hidden states/weights/clean targets, separately from sampling posterior. Copied int64 windows and dtype uncertainty are disclosed. Finite-loss and accumulation gates, rollback/abort and continuation are drawn. Sampler denoise/next-canvas loops, immutable commitment, temperature and strict consecutive entropy stopping match source. Checkpoint multi-file writes and resume limits are explicit. The obsolete 1000-step guide simulator and stale symbols were removed.
