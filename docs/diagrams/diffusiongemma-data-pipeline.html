@@ -5047,15 +5047,15 @@
 
         <!-- Flow paths -->
         <path data-edge-from="sources" data-edge-to="tokenizer" data-edge-label="JSONL streams" data-edge-key="0" data-composition-points="156,157;259,157" d="M 156 157 L 259 157" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="tokenizer" data-edge-to="shards" data-edge-label="packed uint32" data-edge-key="1" data-composition-points="371,157;474,157" d="M 371 157 L 474 157" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="shards" data-edge-to="windows" data-edge-label="mmap slices" data-edge-key="2" data-composition-points="586,157;689,157" d="M 586 157 L 689 157" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="tokenizer" data-edge-to="shards" data-edge-label="packed tokens" data-edge-key="1" data-composition-points="371,157;474,157" d="M 371 157 L 474 157" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="shards" data-edge-to="windows" data-edge-label="mmap + copy" data-edge-key="2" data-composition-points="586,157;689,157" d="M 586 157 L 689 157" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="windows" data-edge-to="shuffler" data-edge-label="indices" data-edge-key="3" data-composition-points="745,186;745,242" d="M 745 186 L 745 242" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="windows" data-edge-to="batch_x0" data-edge-label="clean x0" data-edge-key="4" data-composition-points="801,157;904,157" d="M 801 157 L 904 157" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="batch_x0" data-edge-to="corrupt_xt" data-edge-label="t ~ U{1..16}" data-edge-key="5" data-composition-points="960,186;960,242" d="M 960 186 L 960 242" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
 
         <!-- Nodes -->
-        <g id="node-sources" data-node-id="sources" data-node-label="Corpus Mixture" tabindex="0" role="button" aria-label="Focus Corpus Mixture, FineWeb · Stack · Math, 01 / 0 · Corpus Mixture" aria-pressed="false" data-node-kind="database" data-node-sublabel="FineWeb · Stack · Math" data-node-tag="8.0B tokens" data-node-context="01 / 0 · Corpus Mixture">
-          <title>Corpus Mixture · FineWeb · Stack · Math · 01 / 0 · Corpus Mixture · 8.0B tokens</title>
+        <g id="node-sources" data-node-id="sources" data-node-label="Corpus Mixture" tabindex="0" role="button" aria-label="Focus Corpus Mixture, FineWeb · Stack · Math, 01 / 0 · Corpus Mixture" aria-pressed="false" data-node-kind="database" data-node-sublabel="FineWeb · Stack · Math" data-node-tag="8B-token budget" data-node-context="01 / 0 · Corpus Mixture">
+          <title>Corpus Mixture · FineWeb · Stack · Math · 01 / 0 · Corpus Mixture · 8B-token budget</title>
           <rect x="44" y="128" width="112" height="58" rx="6" class="c-mask"/>
           <rect x="44" y="128" width="112" height="58" rx="6" class="c-database" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(50 134) scale(0.6875)">
@@ -5064,7 +5064,7 @@
           </g>
           <text data-node-label="" data-detail-anchor="" x="100" y="149" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Corpus Mixture</text>
           <text data-detail="context" x="100" y="165" class="t-muted" font-size="7" text-anchor="middle">FineWeb · Stack · Math</text>
-        <text data-detail="fine" x="100" y="175" class="t-database" font-size="7" text-anchor="middle">8.0B tokens</text>
+        <text data-detail="fine" x="100" y="175" class="t-database" font-size="7" text-anchor="middle">8B-token budget</text>
         </g>
 
         <g id="node-tokenizer" data-node-id="tokenizer" data-node-label="GPT-2 Tokenizer" tabindex="0" role="button" aria-label="Focus GPT-2 Tokenizer, Vocab: 50,257, 02 / 1 · Tokenization" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Vocab: 50,257" data-node-tag="uint32 stream" data-node-context="02 / 1 · Tokenization">
@@ -5079,8 +5079,8 @@
         <text data-detail="fine" x="315" y="175" class="t-backend" font-size="7" text-anchor="middle">uint32 stream</text>
         </g>
 
-        <g id="node-shards" data-node-id="shards" data-node-label="Binary Shards" tabindex="0" role="button" aria-label="Focus Binary Shards, 160 × 50M (32 GB), 03 / 2 · Binary Shards" aria-pressed="false" data-node-kind="database" data-node-sublabel="160 × 50M (32 GB)" data-node-tag="uint32 memmap" data-node-context="03 / 2 · Binary Shards">
-          <title>Binary Shards · 160 × 50M (32 GB) · 03 / 2 · Binary Shards · uint32 memmap</title>
+        <g id="node-shards" data-node-id="shards" data-node-label="Binary Shards" tabindex="0" role="button" aria-label="Focus Binary Shards, storage dtype unverified, 03 / 2 · Binary Shards" aria-pressed="false" data-node-kind="database" data-node-sublabel="storage dtype unverified" data-node-tag="check packing manifest" data-node-context="03 / 2 · Binary Shards">
+          <title>Binary Shards · storage dtype unverified · 03 / 2 · Binary Shards · check packing manifest</title>
           <rect x="474" y="128" width="112" height="58" rx="6" class="c-mask"/>
           <rect x="474" y="128" width="112" height="58" rx="6" class="c-database" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(480 134) scale(0.6875)">
@@ -5088,32 +5088,32 @@
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="530" y="149" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Binary Shards</text>
-          <text data-detail="context" x="530" y="165" class="t-muted" font-size="7" text-anchor="middle">160 × 50M (32 GB)</text>
-        <text data-detail="fine" x="530" y="175" class="t-database" font-size="7" text-anchor="middle">uint32 memmap</text>
+          <text data-detail="context" x="530" y="165" class="t-muted" font-size="7" text-anchor="middle">storage dtype unverified</text>
+        <text data-detail="fine" x="530" y="175" class="t-database" font-size="7" text-anchor="middle">check packing manifest</text>
         </g>
 
-        <g id="node-windows" data-node-id="windows" data-node-label="ShardWindows" tabindex="0" role="button" aria-label="Focus ShardWindows, 4,096 tok = 16×256, 04 / 3 · Windowing &amp; Shuffler" aria-pressed="false" data-node-kind="backend" data-node-sublabel="4,096 tok = 16×256" data-node-tag="no +1 shift" data-node-context="04 / 3 · Windowing &amp; Shuffler">
-          <title>ShardWindows · 4,096 tok = 16×256 · 04 / 3 · Windowing &amp; Shuffler · no +1 shift</title>
+        <g id="node-windows" data-node-id="windows" data-node-label="ShardWindows" tabindex="0" role="button" aria-label="Focus ShardWindows, copied, then int64, 04 / 3 · Windowing &amp; Shuffler" aria-pressed="false" data-node-kind="backend" data-node-sublabel="copied, then int64" data-node-tag="loader assumes uint32" data-node-context="04 / 3 · Windowing &amp; Shuffler">
+          <title>ShardWindows · copied, then int64 · 04 / 3 · Windowing &amp; Shuffler · loader assumes uint32</title>
           <rect x="689" y="128" width="112" height="58" rx="6" class="c-mask"/>
           <rect x="689" y="128" width="112" height="58" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(695 134) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="745" y="149" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">ShardWindows</text>
-          <text data-detail="context" x="745" y="165" class="t-muted" font-size="7" text-anchor="middle">4,096 tok = 16×256</text>
-        <text data-detail="fine" x="745" y="175" class="t-backend" font-size="7" text-anchor="middle">no +1 shift</text>
+          <text data-detail="context" x="745" y="165" class="t-muted" font-size="7" text-anchor="middle">copied, then int64</text>
+        <text data-detail="fine" x="745" y="175" class="t-backend" font-size="7" text-anchor="middle">loader assumes uint32</text>
         </g>
 
-        <g id="node-shuffler" data-node-id="shuffler" data-node-label="Shuffled Sampler" tabindex="0" role="button" aria-label="Focus Shuffled Sampler, epoch perm · seed 42, 04 / 3 · Windowing &amp; Shuffler" aria-pressed="false" data-node-kind="backend" data-node-sublabel="epoch perm · seed 42" data-node-tag="resumable cursor" data-node-context="04 / 3 · Windowing &amp; Shuffler">
-          <title>Shuffled Sampler · epoch perm · seed 42 · 04 / 3 · Windowing &amp; Shuffler · resumable cursor</title>
+        <g id="node-shuffler" data-node-id="shuffler" data-node-label="Shuffled Sampler" tabindex="0" role="button" aria-label="Focus Shuffled Sampler, fixed seed permutation, 04 / 3 · Windowing &amp; Shuffler" aria-pressed="false" data-node-kind="backend" data-node-sublabel="fixed seed permutation" data-node-tag="offset, not epoch shuffle" data-node-context="04 / 3 · Windowing &amp; Shuffler">
+          <title>Shuffled Sampler · fixed seed permutation · 04 / 3 · Windowing &amp; Shuffler · offset, not epoch shuffle</title>
           <rect x="689" y="242" width="112" height="58" rx="6" class="c-mask"/>
           <rect x="689" y="242" width="112" height="58" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(695 248) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="745" y="263" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Shuffled Sampler</text>
-          <text data-detail="context" x="745" y="279" class="t-muted" font-size="7" text-anchor="middle">epoch perm · seed 42</text>
-        <text data-detail="fine" x="745" y="289" class="t-backend" font-size="7" text-anchor="middle">resumable cursor</text>
+          <text data-detail="context" x="745" y="279" class="t-muted" font-size="7" text-anchor="middle">fixed seed permutation</text>
+        <text data-detail="fine" x="745" y="289" class="t-backend" font-size="6.9" text-anchor="middle">offset, not epoch shuffle</text>
         </g>
 
         <g id="node-batch_x0" data-node-id="batch_x0" data-node-label="Clean Batch x0" tabindex="0" role="button" aria-label="Focus Clean Batch x0, clean target tokens, 05 / 4 · Training Batches" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="clean target tokens" data-node-tag="(B, 4096) int64" data-node-context="05 / 4 · Training Batches">
@@ -5149,14 +5149,14 @@
           <text x="207.5" y="147" class="t-backend" font-size="8" text-anchor="middle">JSONL streams</text>
         <text data-detail="fine" x="207.5" y="158" class="t-dim" font-size="7" text-anchor="middle">8.0B tok</text>
         </g>
-        <g data-detail="context" data-edge-from="tokenizer" data-edge-to="shards" data-edge-label="packed uint32" data-edge-key="1">
+        <g data-detail="context" data-edge-from="tokenizer" data-edge-to="shards" data-edge-label="packed tokens" data-edge-key="1">
           <rect x="384.65" y="136" width="75.7" height="27" rx="4" class="c-mask"/>
-          <text x="422.5" y="147" class="t-backend" font-size="8" text-anchor="middle">packed uint32</text>
+          <text x="422.5" y="147" class="t-backend" font-size="8" text-anchor="middle">packed tokens</text>
         <text data-detail="fine" x="422.5" y="158" class="t-dim" font-size="7" text-anchor="middle">200MB/file</text>
         </g>
-        <g data-detail="context" data-edge-from="shards" data-edge-to="windows" data-edge-label="mmap slices" data-edge-key="2">
+        <g data-detail="context" data-edge-from="shards" data-edge-to="windows" data-edge-label="mmap + copy" data-edge-key="2">
           <rect x="604.55" y="136" width="65.9" height="27" rx="4" class="c-mask"/>
-          <text x="637.5" y="147" class="t-backend" font-size="8" text-anchor="middle">mmap slices</text>
+          <text x="637.5" y="147" class="t-backend" font-size="8" text-anchor="middle">mmap + copy</text>
         <text data-detail="fine" x="637.5" y="158" class="t-dim" font-size="7" text-anchor="middle">stride 4096</text>
         </g>
         <g data-detail="context" data-edge-from="windows" data-edge-to="shuffler" data-edge-label="indices" data-edge-key="3">
@@ -5377,24 +5377,34 @@
     <div class="cards">
       <div class="card">
         <div class="card-header">
-          <div class="card-dot cyan"></div>
-          <h3>Shard &amp; Windowing Contract</h3>
+          <div class="card-dot amber"></div>
+          <h3>Storage contract requires verification</h3>
         </div>
         <ul>
-          <li>&bull; 160 binary shards holding 50M uint32 GPT-2 tokens each (8.0B total tokens), accessed via zero-copy mmap.</li>
-          <li>&bull; Sequences are sliced into contiguous 4096-token windows (16 canvases × 256 tokens) with zero AR +1 offset.</li>
-          <li>&bull; Windows cross document boundaries with EOS separation, but never cross shard boundaries.</li>
+          <li>&bull; No packing manifest was verified. select_token_dtype chooses uint16 for GPT-2 vocabulary 50,257, while ShardWindows assumes uint32. Verify emitted packing dtype before claiming compatibility.</li>
+          <li>&bull; 160 × 50M tokens is 8B budget arithmetic, not an inventory. On-disk bytes depend on emitted dtype.</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
-          <div class="card-dot emerald"></div>
-          <h3>Deterministic Shuffler &amp; Training Target</h3>
+          <div class="card-dot cyan"></div>
+          <h3>Windows and order</h3>
         </div>
         <ul>
-          <li>&bull; ShuffledRangeSampler maintains an epoch-seeded permutation and epoch/cursor state for exact resume reproduction.</li>
-          <li>&bull; Dataset emits clean target tokens x0; trainer handles corruption to xt and scores the posterior against clean x0.</li>
+          <li>&bull; data/dataset.py:ShardWindows.__getitem__ copies each within-shard slice and converts it to int64. It is not a zero-copy batch.</li>
+          <li>&bull; ShuffledRangeSampler uses a fixed (seed, n_windows) permutation and offset. It does not reshuffle each epoch.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot slate"></div>
+          <h3>Provenance</h3>
+        </div>
+        <ul>
+          <li>&bull; Clean x0 is both the corruption source and reconstruction target. There is no AR +1 shift.</li>
+          <li>&bull; configs/pretrain_a100_380m.yaml at 83acb7cc6e3a597800cb6ae3be8ad673b100e6f3.</li>
         </ul>
       </div>
     </div>

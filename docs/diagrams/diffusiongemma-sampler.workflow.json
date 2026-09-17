@@ -2,28 +2,8 @@
   "schema_version": 2,
   "diagram_type": "workflow",
   "meta": {
-    "title": "DiffusionGemma-Lite Sampler & Block-AR Generation",
-    "quality_profile": "showcase",
-    "views": [
-      {
-        "id": "sampling-loop",
-        "label": "Sampling Loop",
-        "focus": ["noise_init", "mask_gen", "backbone", "posterior", "anneal", "entropy_check"],
-        "note": "Iterative reverse diffusion loop: uniform noise initialization, backbone forward pass, and monotonic token commit."
-      },
-      {
-        "id": "kv-chaining",
-        "label": "KV Chaining",
-        "focus": ["prompt", "kv_cache", "reencode", "append_kv"],
-        "note": "Canvas-by-canvas KV cache chaining: finalized canvases are re-encoded under an all-ones mask."
-      },
-      {
-        "id": "adaptive-stopping",
-        "label": "Adaptive Stopping",
-        "focus": ["posterior", "entropy_check", "early_exit", "reencode"],
-        "note": "Adaptive entropy exit: halts reverse iterations early once average posterior entropy drops below threshold."
-      }
-    ]
+    "title": "DiffusionGemma Canvas Sampling Loop",
+    "quality_profile": "showcase"
   },
   "lanes": [
     {
@@ -78,7 +58,7 @@
       "col": 2,
       "type": "security",
       "label": "Decode Mask",
-      "sublabel": "causal prior · bi active",
+      "sublabel": "prefix + canvas visible",
       "width": 130,
       "height": 48
     },
@@ -98,7 +78,7 @@
       "col": 1,
       "type": "external",
       "label": "Uniform Noise xT",
-      "sublabel": "256 tokens · pure noise",
+      "sublabel": "256 tokens \u00b7 pure noise",
       "width": 130,
       "height": 48
     },
@@ -108,7 +88,7 @@
       "col": 2,
       "type": "backend",
       "label": "Transformer Fwd",
-      "sublabel": "24L · GQA 16/4 · d=1024",
+      "sublabel": "24L \u00b7 GQA 16/4 \u00b7 d=1024",
       "width": 130,
       "height": 48
     },
@@ -117,7 +97,7 @@
       "lane": "denoise",
       "col": 3,
       "type": "backend",
-      "label": "x̂0 Posterior",
+      "label": "x\u03020 Posterior",
       "sublabel": "logits over 50,257 IDs",
       "width": 125,
       "height": 48
@@ -128,7 +108,7 @@
       "col": 4,
       "type": "backend",
       "label": "Anneal & Commit",
-      "sublabel": "τ(t) · monotonic commit",
+      "sublabel": "\u03c4(t) \u00b7 monotonic commit",
       "width": 135,
       "height": 48
     },
@@ -138,7 +118,7 @@
       "col": 5,
       "type": "backend",
       "label": "Entropy Check",
-      "sublabel": "H(x̂0) ≤ threshold",
+      "sublabel": "all-position mean H",
       "width": 125,
       "height": 48
     },
@@ -147,8 +127,8 @@
       "lane": "finalize",
       "col": 4,
       "type": "security",
-      "label": "Early Exit",
-      "sublabel": "adaptive step stop",
+      "label": "Stable low entropy",
+      "sublabel": "H < threshold twice",
       "width": 125,
       "height": 48
     },
@@ -160,6 +140,16 @@
       "label": "All-Ones Pass",
       "sublabel": "re-encode final tokens",
       "width": 125,
+      "height": 48
+    },
+    {
+      "id": "done",
+      "lane": "init",
+      "col": 4,
+      "type": "external",
+      "label": "Return tokens",
+      "sublabel": "trim to requested length",
+      "width": 150,
       "height": 48
     }
   ],
@@ -193,14 +183,14 @@
       "id": "backbone-posterior",
       "from": "backbone",
       "to": "posterior",
-      "label": "hidden h",
+      "label": "logits",
       "variant": "emphasis"
     },
     {
       "id": "posterior-anneal",
       "from": "posterior",
       "to": "anneal",
-      "label": "temp τ",
+      "label": "temp \u03c4",
       "variant": "emphasis"
     },
     {
@@ -214,23 +204,23 @@
       "id": "entropy-reencode",
       "from": "entropy_check",
       "to": "reencode",
-      "label": "t=0 done",
+      "label": "step budget reached",
       "variant": "emphasis"
     },
     {
       "id": "entropy-exit",
       "from": "entropy_check",
       "to": "early_exit",
-      "label": "H ≤ ε",
-      "variant": "security",
-      "role": "error"
+      "label": "2 low-H iterations",
+      "variant": "dashed",
+      "role": "branch"
     },
     {
       "id": "exit-reencode",
       "from": "early_exit",
       "to": "reencode",
-      "variant": "security",
-      "role": "return"
+      "variant": "dashed",
+      "role": "branch"
     },
     {
       "id": "reencode-append",
@@ -238,24 +228,55 @@
       "to": "append_kv",
       "label": "final KV",
       "variant": "emphasis"
+    },
+    {
+      "id": "entropy_check-backbone",
+      "from": "entropy_check",
+      "to": "backbone",
+      "role": "return",
+      "variant": "default",
+      "label": "continue denoising"
+    },
+    {
+      "id": "append_kv-noise_init",
+      "from": "append_kv",
+      "to": "noise_init",
+      "role": "return",
+      "variant": "default",
+      "label": "next canvas"
+    },
+    {
+      "id": "append_kv-done",
+      "from": "append_kv",
+      "to": "done",
+      "role": "branch",
+      "variant": "default",
+      "label": "budget filled"
     }
   ],
   "cards": [
     {
       "dot": "cyan",
-      "title": "Block Diffusion Generation",
+      "title": "Temperature and commitment",
       "items": [
-        "Generation advances in 256-token canvas blocks; each canvas begins from uniform random vocabulary noise (never q_sample).",
-        "Tokens are denoised over T discrete reverse diffusion steps with temperature annealing τ(t) = τ0 · (t/T).",
-        "Committed tokens follow an unchanged-or-stronger rule: positions retain decisions unless confidence strictly increases."
+        "inference/generate.py:BlockDiffusionSampler.denoise_canvas uses tau = .8 - (.8 - .4) \u00d7 k/T, k=0..T-1.",
+        "Only newly committed positions receive sampled predictions. Old committed tokens are immutable, others redraw uniform noise."
       ]
     },
     {
-      "dot": "emerald",
-      "title": "Adaptive Stopping & Cache Chaining",
+      "dot": "amber",
+      "title": "Stopping and cache",
       "items": [
-        "Adaptive stopping monitors posterior entropy across uncommitted tokens, halting step iterations when confidence saturates.",
-        "Finalized canvas tokens undergo an all-ones causal re-encode pass to populate KV cache entries for downstream blocks."
+        "Entropy is averaged across all positions and batch members. Adaptive stopping requires strict H < threshold for two consecutive iterations by default.",
+        "Finalized canvas re-encoding sees the entire cached prefix and active canvas. It is not token-causal within that canvas."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Provenance",
+      "items": [
+        "SamplerConfig defaults: T=32, temperature .8/.4, stability_steps=2. No measured throughput or trained stopping gain.",
+        "configs/pretrain_a100_380m.yaml at 83acb7cc6e3a597800cb6ae3be8ad673b100e6f3."
       ]
     }
   ]

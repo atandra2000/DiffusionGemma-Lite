@@ -1,89 +1,19 @@
 {
-  "schemaVersion": 1,
-  "scope": "DiffusionGemma-Lite Archify visual documentation suite",
-  "diagrams": [
+  "source_revision": "83acb7cc6e3a597800cb6ae3be8ad673b100e6f3",
+  "config": "configs/pretrain_a100_380m.yaml",
+  "receipts": [
     {
-      "type": "architecture",
-      "output": "diffusiongemma-system.html",
-      "specification": {
-        "sha256": "c8ebb37a77b473eb1e056c9356fe327f13aa4679acd8d2e33677242942db4ec7",
-        "bytes": 4104
-      },
-      "artifact": {
-        "sha256": "c9ab4f78e54f387522395195f543ce7ac5a9ba9c9845fca42420f6fadb328301",
-        "bytes": 715789
-      },
-      "validation": {
-        "checksPassed": 9,
-        "checkCount": 9,
-        "compositionProfile": "showcase",
-        "compositionStatus": "pass",
-        "errors": 0,
-        "warnings": 0
-      },
-      "browser_evidence": "passed",
-      "browser_receipt": "diffusiongemma-system.visual-check.json",
-      "visual_review": "passed",
-      "visual_review_scope": "Default READ/still screenshots at 1440x900 and 2048x1320, light and dark: node fit, routes, cards, layout. Export and focus panels not manually exercised."
-    },
-    {
-      "type": "architecture",
-      "output": "diffusiongemma-forward-pass.html",
-      "specification": {
-        "sha256": "4f19c6021a44bd7a6c7eb39ab5ae1d1f211253b60b27253e6a545dff1a565531",
-        "bytes": 3847
-      },
-      "artifact": {
-        "sha256": "990af736500434091ecd96836c9488270aed4822c8b3676b2f3369cb6c619e11",
-        "bytes": 714975
-      },
-      "validation": {
-        "checksPassed": 9,
-        "checkCount": 9,
-        "compositionProfile": "showcase",
-        "compositionStatus": "pass",
-        "errors": 0,
-        "warnings": 0
-      },
-      "browser_evidence": "passed",
-      "browser_receipt": "diffusiongemma-forward-pass.visual-check.json",
-      "visual_review": "passed",
-      "visual_review_scope": "Default READ/still screenshots at 1440x900 and 2048x1320, light and dark: node fit, routes, cards, layout. Export and focus panels not manually exercised."
-    },
-    {
-      "type": "workflow",
-      "output": "diffusiongemma-training.html",
-      "specification": {
-        "sha256": "3836e1b573c073e1937ae4377ec49e35358c4dba8a9b953895c9d9473b4024a3",
-        "bytes": 6295
-      },
-      "artifact": {
-        "sha256": "1270350232e9d70d56aba57a0255f86ea58ac5cf9f2caf3bfda7e39f5d08618a",
-        "bytes": 717737
-      },
-      "validation": {
-        "checksPassed": 9,
-        "checkCount": 9,
-        "compositionProfile": "showcase",
-        "compositionStatus": "pass",
-        "errors": 0,
-        "warnings": 0
-      },
-      "browser_evidence": "passed",
-      "browser_receipt": "diffusiongemma-training.visual-check.json",
-      "visual_review": "passed",
-      "visual_review_scope": "Default READ/still screenshots at 1440x900 and 2048x1320, light and dark: node fit, routes, cards, layout. Export and focus panels not manually exercised."
-    },
-    {
+      "name": "diffusiongemma-data-pipeline",
       "type": "dataflow",
-      "output": "diffusiongemma-data-pipeline.html",
+      "spec": "diffusiongemma-data-pipeline.dataflow.json",
+      "artifact": "diffusiongemma-data-pipeline.html",
       "specification": {
-        "sha256": "08e0351c7bb08336fc5e09fe0cc9a7e5e173a251e0d340ce58f28ca7eca5d8f8",
-        "bytes": 4692
+        "sha256": "64b27ff99f4e05a574ad192f5a0b31cf9d8e16b8168aabc641fc9bbb92942fa4",
+        "bytes": 5247
       },
-      "artifact": {
-        "sha256": "2578268bbcc6b6c9cb33bf9458d06cd5f3f778e7c95df1d3cb61b3aaca634f10",
-        "bytes": 711840
+      "artifact_receipt": {
+        "sha256": "2663a1e534d5c43fa79367f010830ddcdd6c78c0afe7436305b4832703adc120",
+        "bytes": 712325
       },
       "validation": {
         "checksPassed": 9,
@@ -93,21 +23,22 @@
         "errors": 0,
         "warnings": 0
       },
-      "browser_evidence": "passed",
-      "browser_receipt": "diffusiongemma-data-pipeline.visual-check.json",
-      "visual_review": "passed",
-      "visual_review_scope": "Default READ/still screenshots at 1440x900 and 2048x1320, light and dark: node fit, routes, cards, layout. Export and focus panels not manually exercised."
+      "browser_evidence": "pass",
+      "visual_review": "skipped: image input unavailable",
+      "minimum_projected_node_text_px": 7
     },
     {
-      "type": "workflow",
-      "output": "diffusiongemma-sampler.html",
+      "name": "diffusiongemma-forward-pass",
+      "type": "architecture",
+      "spec": "diffusiongemma-forward-pass.architecture.json",
+      "artifact": "diffusiongemma-forward-pass.html",
       "specification": {
-        "sha256": "f4ae84291bdd2e6cac9262e010431aee486e3a0c5bb04bc99cd4f1bfc3a66b3c",
-        "bytes": 6397
+        "sha256": "0a1053157f3cf7de0e8ab289153f4de5f689bbc229d41e143ca4779b5d878890",
+        "bytes": 5044
       },
-      "artifact": {
-        "sha256": "929b8f9b3345c06417ec8f1bb466c9af83df881ffbf47c56471860d667b6b5fe",
-        "bytes": 718972
+      "artifact_receipt": {
+        "sha256": "9f7a4afd02749919237268d5ecc85c862247f7fc4dc49f0867ccf268e50aed9d",
+        "bytes": 714860
       },
       "validation": {
         "checksPassed": 9,
@@ -117,10 +48,84 @@
         "errors": 0,
         "warnings": 0
       },
-      "browser_evidence": "passed",
-      "browser_receipt": "diffusiongemma-sampler.visual-check.json",
-      "visual_review": "passed",
-      "visual_review_scope": "Default READ/still screenshots at 1440x900 and 2048x1320, light and dark: node fit, routes, cards, layout. Export and focus panels not manually exercised."
+      "browser_evidence": "pass",
+      "visual_review": "skipped: image input unavailable",
+      "minimum_projected_node_text_px": 6.665255474452555
+    },
+    {
+      "name": "diffusiongemma-sampler",
+      "type": "workflow",
+      "spec": "diffusiongemma-sampler.workflow.json",
+      "artifact": "diffusiongemma-sampler.html",
+      "specification": {
+        "sha256": "a6b3fafb88ee04c909fe7a72ce0339bab8afa725d58060fc5ae03ca2f47961b1",
+        "bytes": 6503
+      },
+      "artifact_receipt": {
+        "sha256": "20cda9de4cdd32ab7b7cfb1097784d4a89e3230d928fc98effd15896e17a115e",
+        "bytes": 722473
+      },
+      "validation": {
+        "checksPassed": 9,
+        "checkCount": 9,
+        "compositionProfile": "showcase",
+        "compositionStatus": "pass",
+        "errors": 0,
+        "warnings": 0
+      },
+      "browser_evidence": "pass",
+      "visual_review": "skipped: image input unavailable",
+      "minimum_projected_node_text_px": 8
+    },
+    {
+      "name": "diffusiongemma-system",
+      "type": "architecture",
+      "spec": "diffusiongemma-system.architecture.json",
+      "artifact": "diffusiongemma-system.html",
+      "specification": {
+        "sha256": "dd87554ec79584c2c0f113ca26018140bda854dded6a9d58f5bfb7d9c5c7683a",
+        "bytes": 5650
+      },
+      "artifact_receipt": {
+        "sha256": "e3033a5246af95a82dde7f49d7647c38bcfa3321164a2166f6ff957aed932825",
+        "bytes": 715954
+      },
+      "validation": {
+        "checksPassed": 9,
+        "checkCount": 9,
+        "compositionProfile": "showcase",
+        "compositionStatus": "pass",
+        "errors": 0,
+        "warnings": 0
+      },
+      "browser_evidence": "pass",
+      "visual_review": "skipped: image input unavailable",
+      "minimum_projected_node_text_px": 6.071739130434782
+    },
+    {
+      "name": "diffusiongemma-training",
+      "type": "workflow",
+      "spec": "diffusiongemma-training.workflow.json",
+      "artifact": "diffusiongemma-training.html",
+      "specification": {
+        "sha256": "3eb514d5ed91d24fa454bff0f94e5c621384e475d254d43fe0de761195fbd4b0",
+        "bytes": 6327
+      },
+      "artifact_receipt": {
+        "sha256": "f7090417a87dadf31bc18a192ca75c618d89b026e680039448044b7e3b2076a3",
+        "bytes": 719190
+      },
+      "validation": {
+        "checksPassed": 9,
+        "checkCount": 9,
+        "compositionProfile": "showcase",
+        "compositionStatus": "pass",
+        "errors": 0,
+        "warnings": 0
+      },
+      "browser_evidence": "pass",
+      "visual_review": "skipped: image input unavailable",
+      "minimum_projected_node_text_px": 8
     }
   ]
 }
