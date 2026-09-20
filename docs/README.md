@@ -4,7 +4,9 @@ Every code citation in this tree uses `file.py:Symbol` anchors
 (e.g. `models/mask.py:build_block_causal_mask`); `scripts/check_docs.py`
 fails on any anchor that stops resolving, and `--coverage` fails if a public
 symbol in `models/`, `training/`, `data/`, `inference/`, `utils/` is never
-cited. Line-number citations are rejected — they rot.
+cited. Line-number citations are rejected — they rot. The measured state of
+this tree — verification runs, findings, acceptance criteria — is recorded in
+[`AUDIT.md`](AUDIT.md).
 
 ## Visual systems atlas
 
@@ -32,18 +34,23 @@ Explore the [Interactive Visual Systems Guide](diagrams/diffusiongemma_visual_gu
 | 16 | [`references/R6_sampler_eval_api.md`](references/R6_sampler_eval_api.md) | 75 | sampler + eval APIs |
 | 17 | [`references/R7_data_utils_api.md`](references/R7_data_utils_api.md) | 80 | data + checkpoint + memory + logging APIs |
 | 18 | [`guides/quickstart.md`](guides/quickstart.md) | 126 | data → train → eval commands with expected outputs |
-| 19 | [`guides/debugging-playbook.md`](guides/debugging-playbook.md) | 106 | NaN rollback, resume divergence, shape errors, anchor failures |
-| 20 | [`guides/sampler-tuning.md`](guides/sampler-tuning.md) | 46 | SamplerConfig knobs: what to touch, what not to |
-| 21 | [`guides/benchmarking.md`](guides/benchmarking.md) | 57 | honest speedup/VRAM/MFU discipline |
-| 22 | [`guides/checkpoint-ops.md`](guides/checkpoint-ops.md) | 53 | checkpoint layout, resume recipes, disk hygiene |
-| 23 | [`guides/contributing.md`](guides/contributing.md) | 57 | the doc contract + gates for new code |
-| 24 | [`guides/a100-runbook.md`](guides/a100-runbook.md) | 75 | A100 pod operational sequence, boundary checks, resume |
-| 25 | [`references/eval-scripts.md`](references/eval-scripts.md) | 120 | B1–B6 gates, flags, CPU vs A100 forms, PASS/DISCLOSED semantics |
+| 19 | [`guides/learning-paths.md`](guides/learning-paths.md) | 78 | three audience-routed step tables (beginner / intermediate / expert) through the whole corpus |
+| 20 | [`guides/glossary.md`](guides/glossary.md) | 115 | notation table + per-component term tables — the single cross-cutting lookup |
+| 21 | [`guides/debugging-playbook.md`](guides/debugging-playbook.md) | 106 | NaN rollback, resume divergence, shape errors, anchor failures |
+| 22 | [`guides/sampler-tuning.md`](guides/sampler-tuning.md) | 46 | SamplerConfig knobs: what to touch, what not to |
+| 23 | [`guides/benchmarking.md`](guides/benchmarking.md) | 57 | honest speedup/VRAM/MFU discipline |
+| 24 | [`guides/checkpoint-ops.md`](guides/checkpoint-ops.md) | 53 | checkpoint layout, resume recipes, disk hygiene |
+| 25 | [`guides/contributing.md`](guides/contributing.md) | 58 | the doc contract + gates for new code |
+| 26 | [`guides/a100-runbook.md`](guides/a100-runbook.md) | 89 | A100 pod operational sequence, boundary checks, resume |
+| 27 | [`references/eval-scripts.md`](references/eval-scripts.md) | 120 | B1–B6 gates, flags, CPU vs A100 forms, PASS/DISCLOSED semantics |
+| 28 | [`AUDIT.md`](AUDIT.md) | 92 | measured verification runs, findings, condensed codebase map, acceptance criteria |
 
 Every concept doc carries its own glossary, "what breaks if you change this"
 table, and embedded interview Q&A. First read for the foundations:
 `concepts/foundations.md`; for rulings and deltas, `../DIFFUSION.md` stays
-authoritative.
+authoritative. If you don't know where to start, [`guides/learning-paths.md`](guides/learning-paths.md)
+routes you by background and goal; for a term you don't recognize,
+[`guides/glossary.md`](guides/glossary.md).
 
 ## House rules
 
