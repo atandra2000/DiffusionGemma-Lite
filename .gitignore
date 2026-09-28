@@ -65,3 +65,6 @@ docs_html/
 .superpowers/
 .docs-authoring/
 
+
+# Local Claude Code state (machine-specific, not project content)
+.claude/

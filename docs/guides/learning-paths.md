@@ -26,12 +26,14 @@ No prior discrete-diffusion background required.
 | Step | Doc | What you will know after |
 |------|-----|--------------------------|
 | 1 | [quickstart.md](quickstart.md) | How the repo is laid out, how to run data → train → eval commands on CPU, and what the canonical 343.5M numbers are. |
-| 2 | [foundations.md](../concepts/foundations.md) (lineage + task) | The AR → diffusion → D3PM lineage, why uniform-state corruption pairs with x0 prediction, and the worked forward pass. |
-| 3 | [foundations.md](../concepts/foundations.md) (param accounting) | Why the model pins exactly 343,516,160 parameters and where the early "~380M" number went wrong. |
-| 4 | [diffusion-core.md](../concepts/diffusion-core.md) | The cosine schedule (`models/diffusion.py:alpha_bar`), per-canvas timestep sampling (`models/diffusion.py:sample_canvas_t`), and corruption (`models/diffusion.py:q_sample`). |
-| 5 | [block-causal-attention.md](../concepts/block-causal-attention.md) | The causal-across-canvases / bidirectional-within mask (`models/mask.py:build_block_causal_mask`), GQA 16Q/4KV, and the three attention paths (eager / SDPA / FlexAttention). |
-| 6 | [self-conditioning.md](../concepts/self-conditioning.md) | Zero-init equivalence (bit-exact at init), the detached pre-pass, and why the add happens exactly once per path (`models/selfcond.py:SelfConditioning`). |
-| 7 | [R2 — Transformer API](../references/R2_transformer_api.md) + [R3 — Mask/Attention API](../references/R3_mask_attention_api.md) | The code tour: `models/transformer.py:DiffusionGemma`, `models/block.py:DenoiseBlock`, `models/attention.py:DenoiseAttention` with shape contracts. |
+| 2 | [block-diffusion.md](../concepts/block-diffusion.md) | The whole uniform-state formulation in one page: the corruption process (`models/diffusion.py:q_sample`), what "uniform state" means, and why canvases. |
+| 3 | [foundations.md](../concepts/foundations.md) (lineage + task) | The AR → diffusion → D3PM lineage, why uniform-state corruption pairs with x0 prediction, and the worked forward pass. |
+| 4 | [foundations.md](../concepts/foundations.md) (param accounting) | Why the model pins exactly 343,516,160 parameters and where the early "~380M" number went wrong. |
+| 5 | [diffusion-core.md](../concepts/diffusion-core.md) | The cosine schedule (`models/diffusion.py:alpha_bar`), per-canvas timestep sampling (`models/diffusion.py:sample_canvas_t`), and corruption (`models/diffusion.py:q_sample`). |
+| 6 | [block-causal-attention.md](../concepts/block-causal-attention.md) | The causal-across-canvases / bidirectional-within mask (`models/mask.py:build_block_causal_mask`), GQA 16Q/4KV, and the three attention paths (eager / SDPA / FlexAttention). |
+| 7 | [self-conditioning-mechanism.md](../concepts/self-conditioning-mechanism.md) | The compact mechanism read: zero-init (`models/selfcond.py:SelfConditioning.proj`), when the input is fed, train/test symmetry. |
+| 8 | [self-conditioning.md](../concepts/self-conditioning.md) | Zero-init equivalence (bit-exact at init), the detached pre-pass, and why the add happens exactly once per path (`models/selfcond.py:SelfConditioning`). |
+| 9 | [R2 — Transformer API](../references/R2_transformer_api.md) + [R3 — Mask/Attention API](../references/R3_mask_attention_api.md) | The code tour: `models/transformer.py:DiffusionGemma`, `models/block.py:DenoiseBlock`, `models/attention.py:DenoiseAttention` with shape contracts. |
 
 ## Intermediate path — Train it and understand the numerics
 
@@ -44,10 +46,12 @@ pipeline.
 | 1 | [R1 — Config Schema](../references/R1_config.md) | Every model/runtime/sampler knob, its default, and its reader symbol. |
 | 2 | [training.md](../training.md) | The applied pretrain loop: AdamW (3e-4, warmup 2000 → cosine to 0.05), grad checkpointing every 3 blocks, NaN guard, checkpointing. |
 | 3 | [diffusion-core.md](../concepts/diffusion-core.md) (loss half) | Why the loss is cross-entropy against *clean* tokens (x0 parameterization — Ruling 19) and how `training/losses.py:chunked_x0_ce` never materializes full-vocab logits. |
-| 4 | [memory-engineering.md](../concepts/memory-engineering.md) | The byte budget, the chunked-CE fp32-logsumexp argument, and the VRAM-for-MFU trade. |
-| 5 | [data-pipeline.md](../concepts/data-pipeline.md) | The shard/window contract (`data/dataset.py:ShardWindows`), the no-+1-shift rationale, and the resumable shuffler (`data/dataset.py:ShuffledRangeSampler`). |
-| 6 | [R5 — Loss/Training API](../references/R5_loss_training_api.md) + [R7 — Data/Checkpoint/Memory API](../references/R7_data_utils_api.md) | `training/pretrain.py:Pretrainer` internals and `utils/checkpoint.py:CheckpointManager` resume recipes. |
-| 7 | [checkpoint-ops.md](checkpoint-ops.md) | Checkpoint layout, resume procedures, disk hygiene. |
+| 4 | [canvas-denoising.md](../concepts/canvas-denoising.md) | The per-step semantics of one 256-token canvas: commit rule, all-ones decode view (`models/mask.py:build_canvas_decode_mask`), and the re-encode into KV. |
+| 5 | [memory-engineering.md](../concepts/memory-engineering.md) | The byte budget, the chunked-CE fp32-logsumexp argument, and the VRAM-for-MFU trade. |
+| 6 | [chunked-ce-equivalence.md](../concepts/chunked-ce-equivalence.md) | The proof that `training/losses.py:chunked_x0_ce` equals the eager CE up to reduction order, and which tests pin it. |
+| 7 | [data-pipeline.md](../concepts/data-pipeline.md) | The shard/window contract (`data/dataset.py:ShardWindows`), the no-+1-shift rationale, and the resumable shuffler (`data/dataset.py:ShuffledRangeSampler`). |
+| 8 | [R5 — Loss/Training API](../references/R5_loss_training_api.md) + [R7 — Data/Checkpoint/Memory API](../references/R7_data_utils_api.md) | `training/pretrain.py:Pretrainer` internals and `utils/checkpoint.py:CheckpointManager` resume recipes. |
+| 9 | [checkpoint-ops.md](checkpoint-ops.md) | Checkpoint layout, resume procedures, disk hygiene. |
 
 ## Expert path — Sample, evaluate, optimize
 

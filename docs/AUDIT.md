@@ -23,6 +23,26 @@ The 2 warnings are benign and known: flex_attention invoked uncompiled in
 is semantic equivalence, not kernel fusion), and an lr_scheduler ordering
 warning in `tests/test_training.py::test_lr_schedule_shape` (shape probe).
 
+Wave-1 closeout addendum, re-measured 2026-09-21:
+
+| Run | Command | Result |
+|-----|---------|--------|
+| Doc↔code gate | `python3 scripts/check_docs.py --coverage --links` | PASS — scanned 39 docs, 776 anchors; resolution PASS, coverage PASS, line anchors PASS, links PASS |
+| Test suite | `python3 -m pytest -m "not gpu and not slow"` | **77 passed, 2 warnings in ~12.6 s** (macOS CPU; same benign warnings as above) |
+
+Addendum: the Wave-1 "Special work" concepts cluster landed as four compact,
+audience-tagged docs under `docs/concepts/` —
+[block-diffusion.md](concepts/block-diffusion.md),
+[canvas-denoising.md](concepts/canvas-denoising.md),
+[self-conditioning-mechanism.md](concepts/self-conditioning-mechanism.md),
+[chunked-ce-equivalence.md](concepts/chunked-ce-equivalence.md) — each
+cross-linked to the canonical deep dive it complements (no existing doc was
+rewritten). `docs/README.md` gained the measured corpus-size table (dated),
+a concepts-track table, and a file→doc map; the reading-order line counts
+were re-measured (the R1–R7 rows had drifted from 120/80/85/65/60/75/80 down
+to 82/54/51/39/35/41/52 — same failure mode as finding A1);
+`guides/learning-paths.md` step tables route the new docs.
+
 ## 2. Findings
 
 | ID | Severity | Evidence | Status |
