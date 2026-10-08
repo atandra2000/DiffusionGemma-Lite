@@ -15,7 +15,8 @@ def test_microbench_tiny_runs():
     """microbench_a100.py --tiny runs on CPU and exits 0."""
     res = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "microbench_a100.py"), "--tiny"],
-        capture_output=True, text=True, cwd=str(ROOT))
+        capture_output=True, text=True, cwd=str(ROOT),
+        env={**os.environ, "CUDA_VISIBLE_DEVICES": ""})
     assert res.returncode == 0, f"Stderr: {res.stderr}\nStdout: {res.stdout}"
     assert "PASS (CPU self-check completed)" in res.stdout
 
@@ -24,7 +25,8 @@ def test_microbench_no_cuda_fallback():
     """microbench_a100.py without args exits 0 cleanly on CPU."""
     res = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "microbench_a100.py")],
-        capture_output=True, text=True, cwd=str(ROOT))
+        capture_output=True, text=True, cwd=str(ROOT),
+        env={**os.environ, "CUDA_VISIBLE_DEVICES": ""})
     assert res.returncode == 0, f"Stderr: {res.stderr}\nStdout: {res.stdout}"
 
 
@@ -32,7 +34,8 @@ def test_step_time_tiny_runs():
     """step_time_a100.py --tiny runs on CPU and exits 0."""
     res = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "step_time_a100.py"), "--tiny", "--steps", "2", "--warmup", "1"],
-        capture_output=True, text=True, cwd=str(ROOT))
+        capture_output=True, text=True, cwd=str(ROOT),
+        env={**os.environ, "CUDA_VISIBLE_DEVICES": ""})
     assert res.returncode == 0, f"Stderr: {res.stderr}\nStdout: {res.stdout}"
     assert "PASS (CPU self-check completed)" in res.stdout
 
@@ -41,7 +44,8 @@ def test_step_time_no_cuda_fallback():
     """step_time_a100.py without args exits 0 cleanly on CPU."""
     res = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "step_time_a100.py")],
-        capture_output=True, text=True, cwd=str(ROOT))
+        capture_output=True, text=True, cwd=str(ROOT),
+        env={**os.environ, "CUDA_VISIBLE_DEVICES": ""})
     assert res.returncode == 0, f"Stderr: {res.stderr}\nStdout: {res.stdout}"
 
 
