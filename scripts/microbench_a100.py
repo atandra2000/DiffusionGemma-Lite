@@ -67,7 +67,7 @@ def run_benchmark(config_path: str, checkpointed: bool = False, tiny: bool = Fal
             gate_gb = 55.0
             grad_ckpt = False
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu" if tiny else ("cuda:0" if torch.cuda.is_available() else "cpu"))
     if device.type == "cpu" and model_cfg.attn_impl == "flex":
         model_cfg.attn_impl = "sdpa"
 

@@ -27,7 +27,7 @@ def test_embed_is_softmax_weighted_mean(device):
     p_ref = (h @ E.T).softmax(-1)
     out = SelfConditioning(D).embed(h, E)
     assert torch.allclose(out, p_ref @ E, atol=1e-8)
-    assert torch.allclose(p_ref.sum(-1), torch.ones(B, T, dtype=torch.float64), atol=1e-12)
+    assert torch.allclose(p_ref.sum(-1), torch.ones(B, T, dtype=torch.float64, device=device), atol=1e-12)
     assert (p_ref >= 0).all()
 
     # Saturation: h_norm = k * E[i] with large k makes p nearly one-hot at token i.

@@ -9,8 +9,10 @@ from models.mask import build_block_causal_mask
 def _rope_ref(x, positions, theta):
     """Self-contained rotate-half reference (not imported from the module)."""
     half = x.size(-1) // 2
-    inv = theta ** (-2.0 * torch.arange(half, dtype=x.dtype) / x.size(-1))
-    ang = positions.to(x.dtype)[:, None] * inv
+    # Every operand must land on x.device. arange defaults to CPU, so an
+    # unqualified build here mixes devices the moment x is on CUDA.
+    inv = theta ** (-2.0 * torch.arange(half, dtype=x.dtype, device=x.device) / x.size(-1))
+    ang = positions.to(device=x.device, dtype=x.dtype)[:, None] * inv
     cos = ang.cos()[None, None].repeat(1, 1, 1, 2)
     sin = ang.sin()[None, None].repeat(1, 1, 1, 2)
     x1, x2 = x[..., :half], x[..., half:]

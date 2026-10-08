@@ -54,7 +54,7 @@ def test_block_ar_chaining_matches_single_shot(tiny_model, device):
 
     # Single-shot reference: one block-causal forward over prompt + final canvas1 + noise.
     full = torch.cat([prompt, c1, x2], dim=1)
-    tt = torch.tensor([[0, 0, 4]])
+    tt = torch.tensor([[0, 0, 4]], device=device)
     logits_full = model.head_forward(model.backbone(full, tt, time_steps=4))
     assert torch.allclose(logits_chain, logits_full[:, prefix2:], atol=1e-5)
 
