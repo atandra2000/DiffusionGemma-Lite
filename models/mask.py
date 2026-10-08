@@ -40,12 +40,33 @@ def build_block_causal_block_mask(seq_len: int, canvas_len: int, device=None):
 
     return create_block_mask(mask_mod, None, None, seq_len, seq_len, device=device)
 
+def _sdpa_supports_gqa() -> bool:
+    """``enable_gqa`` landed in torch 2.5. On 2.4 the kwarg raises TypeError."""
+    import inspect
+    try:
+        return "enable_gqa" in inspect.signature(F.scaled_dot_product_attention).parameters
+    except (TypeError, ValueError):
+        return False
+
+
+_SDPA_HAS_GQA = _sdpa_supports_gqa()
+
+
 def block_causal_sdpa_attention(q, k, v, mask, enable_gqa: bool = False):
     """Fast path: F.scaled_dot_product_attention with a bool attn_mask.
 
     ``enable_gqa=True`` lets the kernel consume untiled (n_kv_heads) k/v directly,
-    skipping the 4x repeat_interleave expansion."""
-    return F.scaled_dot_product_attention(q, k, v, attn_mask=mask, enable_gqa=enable_gqa)
+    skipping the 4x repeat_interleave expansion. torch before 2.5 has no such
+    kwarg, so fall back to that expansion rather than raising TypeError."""
+    if not enable_gqa:
+        return F.scaled_dot_product_attention(q, k, v, attn_mask=mask)
+    if _SDPA_HAS_GQA:
+        return F.scaled_dot_product_attention(q, k, v, attn_mask=mask, enable_gqa=True)
+    n_rep = q.size(1) // k.size(1)
+    if n_rep > 1:
+        k = k.repeat_interleave(n_rep, dim=1)
+        v = v.repeat_interleave(n_rep, dim=1)
+    return F.scaled_dot_product_attention(q, k, v, attn_mask=mask)
 
 def flex_block_causal_attention(q, k, v, block_mask):
     """FlexAttention path: fused block-sparse kernel with native GQA.

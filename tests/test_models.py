@@ -7,6 +7,15 @@ from models.diffusion import x0_ce_loss
 from models.transformer import DiffusionGemma, DiffusionGemmaConfig
 
 
+def _has_flex_attention() -> bool:
+    """flex_attention is a torch 2.5 API."""
+    try:
+        from torch.nn.attention.flex_attention import flex_attention  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
 def test_forward_shapes(tiny_model, device):
     x = torch.randint(0, 256, (2, 64), device=device)
     t = torch.randint(1, 5, (2, 2), device=device)
@@ -73,6 +82,11 @@ def test_eager_attn_impl_matches_sdpa(tiny_cfg, device):
 
 
 @pytest.mark.numeric
+@pytest.mark.skipif(
+    not hasattr(torch.nn.functional, "scaled_dot_product_attention")
+    or not _has_flex_attention(),
+    reason="flex_attention is a torch 2.5 API; this build is torch 2.4",
+)
 def test_flex_attn_impl_matches_sdpa(tiny_cfg, device):
     # flex branch: BlockMask block-causal kernel must match the bool-mask sdpa path
     try:
