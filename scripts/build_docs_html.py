@@ -47,15 +47,16 @@ DOC_FILES = [
 # portal.js that holds the hero, pass-diagram, sidebar, copy/expand, and
 # TOC scrollspy logic. All pages reference the same shell.
 FONT_LINK = ('<link href="https://fonts.googleapis.com/css2?'
-             'family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400'
-             '&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400'
+             'family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;'
+             '0,7..72,600;0,7..72,700;1,7..72,400'
+             '&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400'
              '&display=swap" rel="stylesheet">')
 BOOT_OVERLAY_HTML = (
     '<div id="boot-overlay" aria-hidden="true">'
     '<div class="boot-inner">'
     '<div class="boot-wordmark">DIFFUSIONGEMMA-LITE</div>'
-    '<div class="boot-line">loading weights '
-    '<span class="boot-bar">[\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591] 0%</span>'
+    '<div class="boot-line">Loading the notes'
+    '<span class="boot-bar"></span>'
     '</div></div></div>'
 )
 BOOT_SCRIPT = """<script>
@@ -92,7 +93,7 @@ HEAD_TEMPLATE = """<!DOCTYPE html>
 """
 
 DOC_EXTRA_HEAD = """    <!-- Highlight.js for Syntax Highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <!-- KaTeX for LaTeX Math -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
@@ -856,6 +857,10 @@ def generate_assets():
 
 def main():
     print("Building DiffusionGemma-Lite HTML Documentation...")
+    # docs_html/ is a build artifact, so wipe it first. Otherwise a chapter
+    # dropped from DOC_FILES survives as a stale page and gets published.
+    if OUTPUT_DIR.exists():
+        shutil.rmtree(OUTPUT_DIR)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUTPUT_DIR / ".nojekyll").touch()
 
