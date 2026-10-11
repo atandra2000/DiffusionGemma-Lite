@@ -2250,6 +2250,17 @@ blockquote p:last-child { margin-bottom: 0; }
     .portal-card:hover .card-heading { color: var(--ink); }
 }
 @media (max-width: 560px) {
+    /* The brand + right-hand links together exceed a 390px viewport and push
+       the document into horizontal scroll. Let the header wrap and drop the
+       badge rather than letting either clip. */
+    .site-header {
+        flex-wrap: wrap;
+        row-gap: 0.5rem;
+        padding: 0.6rem 1rem;
+    }
+    .header-left { gap: 0.7rem; min-width: 0; }
+    .header-right { gap: 0.8rem; }
+    .brand-badge { display: none; }
     .hero-figure-header {
         flex-direction: column;
         align-items: stretch;
@@ -2301,5 +2312,22 @@ blockquote p:last-child { margin-bottom: 0; }
         animation: none !important;
         transition: none !important;
         scroll-behavior: auto !important;
+    }
+}
+
+
+/* Mobile overflow guard: wide tables and ASCII diagrams scroll inside
+   their own box instead of pushing the whole page sideways. */
+@media (max-width: 760px) {
+    .doc-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .markdown-body > pre,
+    .markdown-body pre:not(.code-wrapper pre) {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 }
